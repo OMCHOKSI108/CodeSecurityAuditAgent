@@ -32,8 +32,8 @@ CodeSecAudit AI acts like an AI senior engineer inside GitHub pull requests, det
 
 ## Screenshots
 
-### PR Review — Inline Comments
-
+### PR Review — Inline Comments 
+Link : https://github.com/OMCHOKSI108/CodeSecurityAuditAgent/pull/4
 ![PR Review Bugs](docs/screenshots/github_pr_review_bugs.png)
 *Detected vulnerabilities with inline PR comments*
 
