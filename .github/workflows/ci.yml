@@ -16,7 +16,7 @@ jobs:
         with:
           python-version: "3.12"
       - name: Check Source Line Limits
-        run: python3 scripts/check_source_line_limit.py
+        run: python3 .github/scripts/check_source_line_limit.py
 
   test-rag-server:
     name: Test RAG Server

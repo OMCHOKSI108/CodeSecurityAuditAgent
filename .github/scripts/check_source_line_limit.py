@@ -23,7 +23,6 @@ EXCLUDE_DIRS = {
     "__pycache__",
     ".pytest_cache",
     ".coverage",
-    "legacy",
 }
 EXCLUDE_FILES = {
     "package-lock.json",
@@ -40,6 +39,14 @@ def should_skip(path: Path) -> bool:
     if path.suffix not in TARGET_EXTENSIONS:
         return True
     return False
+
+
+def find_repo_root() -> Path:
+    current = Path(__file__).resolve().parent
+    for p in [current, *current.parents]:
+        if (p / "docker-compose.yml").exists() or (p / ".git").exists():
+            return p
+    return Path.cwd()
 
 
 def check_files(root: Path) -> tuple[int, list[tuple[Path, int]]]:
@@ -62,7 +69,7 @@ def check_files(root: Path) -> tuple[int, list[tuple[Path, int]]]:
 
 
 def main() -> None:
-    root = Path(__file__).resolve().parents[1]
+    root = find_repo_root()
     checked, violations = check_files(root)
 
     print(f"Checked {checked} source files for max {MAX_LINES} lines rule.")

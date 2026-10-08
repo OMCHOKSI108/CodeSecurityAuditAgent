@@ -149,12 +149,10 @@ flowchart TD
 client/                Next.js + TSX: Product UI, SSR, same-origin API proxy, admin log tails
 main-server/           Python + FastAPI: Auth, GitHub App, PostgreSQL persistence, Redis queues, admin logs
 rag-server/            Python + FastAPI: Private embedding microservice & Qdrant vector retrieval
-contracts/openapi/     OpenAPI 3.1 specifications for main-server and rag-server
-scripts/               Line-limit enforcer (check_source_line_limit.py) and ops helpers
-docs/                  Architecture, Operations, and Runbook documentation
+docs/                  Architecture, Operations, Runbook, and OpenAPI 3.1 contracts (docs/contracts/)
+.github/               CI workflow (ci.yml) and line-limit enforcement script (.github/scripts/)
 docker-compose.yml     Multi-container orchestrator (client, main-server, main-worker, rag-server, postgres, redis, qdrant)
 .env.example           Documented root environment configuration template
-legacy/                Archived previous single-node implementation
 ```
 
 ---
