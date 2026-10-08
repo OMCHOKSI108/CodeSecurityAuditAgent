@@ -1,0 +1,79 @@
+"""Corpus loading and index ingestion."""
+
+import gzip
+import json
+import logging
+import uuid
+from typing import Any
+import requests
+
+logger = logging.getLogger("rag_server")
+
+
+def load_corpus_from_url(url: str) -> list[dict[str, Any]]:
+    logger.info(f"Downloading RAG corpus from {url}")
+    resp = requests.get(url, timeout=60)
+    resp.raise_for_status()
+
+    raw_bytes = resp.content
+    if url.endswith(".gz"):
+        raw_text = gzip.decompress(raw_bytes).decode("utf-8")
+    else:
+        raw_text = raw_bytes.decode("utf-8")
+
+    chunks = []
+    for line in raw_text.splitlines():
+        line = line.strip()
+        if line:
+            chunks.append(json.loads(line))
+    logger.info(f"Loaded {len(chunks)} documents from corpus")
+    return chunks
+
+
+def index_chunks(qdrant_store, embedding_mgr, chunks: list[dict[str, Any]], batch_size: int = 64) -> int:
+    try:
+        from qdrant_client.http import models
+    except ImportError:
+        logger.error("qdrant-client is not installed")
+        return 0
+
+    client = qdrant_store.get_client()
+    if not client:
+        return 0
+
+    qdrant_store.ensure_collection(vector_dim=embedding_mgr.dimension)
+
+    total_indexed = 0
+    for i in range(0, len(chunks), batch_size):
+        batch = chunks[i : i + batch_size]
+        texts = [b.get("content", "") or b.get("text", "") for b in batch]
+        vectors = embedding_mgr.encode(texts)
+
+        points = []
+        for doc, vec in zip(batch, vectors):
+            doc_id = str(doc.get("id") or uuid.uuid4())
+            cwe_id = doc.get("cwe_id", "")
+            cwe_list = [cwe_id] if isinstance(cwe_id, str) and cwe_id else (cwe_id or [])
+
+            payload = {
+                "title": doc.get("title", ""),
+                "section": doc.get("section_title", "") or doc.get("section", ""),
+                "content": doc.get("content", "") or doc.get("text", ""),
+                "source_url": doc.get("source_file", "") or doc.get("source", ""),
+                "cwe_ids": cwe_list,
+                "corpus_version": "v1",
+            }
+
+            points.append(
+                models.PointStruct(
+                    id=doc_id,
+                    vector=vec,
+                    payload=payload,
+                )
+            )
+
+        client.upsert(collection_name=qdrant_store.collection_name, points=points)
+        total_indexed += len(points)
+
+    logger.info(f"Successfully indexed {total_indexed} points into Qdrant")
+    return total_indexed

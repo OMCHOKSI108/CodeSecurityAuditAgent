@@ -125,42 +125,36 @@ CodeSecAudit AI addresses all four: automated detection with OWASP-aligned rules
 
 ---
 
-## Architecture
+## Architecture (Three-Server Blueprint)
 
 ```mermaid
 flowchart TD
-    A[GitHub Pull Request] --> B[GitHub Action / Future GitHub App]
-    B --> C[Changed Files + Diff Parser]
-    C --> D[review_engine Critic]
-    D --> E[Remote RAG Service on Hugging Face]
-    E --> F[OWASP Secure Coding Guidance]
-    D --> G[Fixer + Risk Scoring]
-    F --> G
-    G --> H[PR Summary Comment]
-    G --> I[Inline PR Comments]
-    G --> J[FastAPI Review History API]
-    J --> K[SQLite MVP / MongoDB SaaS]
-    K --> L[Streamlit Dashboard]
+    Browser[Browser User] --> Client["client/ (Next.js + TSX)"]
+    Client -->|Same-origin rewrite /api/*| Main["main-server/ (Python + FastAPI)"]
+    Main --> PG[("PostgreSQL 16 (Persistence)")]
+    Main --> Redis[("Redis 7 (Sessions, Queues, Logs)")]
+    Main -->|Enqueue Job (202 Accepted)| Redis
+    Worker["main-worker (Background Worker)"] -->|Pop Job| Redis
+    Worker -->|Internal HTTP + Token| RAG["rag-server/ (Private FastAPI)"]
+    RAG --> Qdrant[("Qdrant (Vector DB)")]
+    Worker --> PG
+    Worker --> Redis
 ```
-
-For detailed architecture including the review pipeline, RAG service internals, and SaaS future, see [docs/architecture.md](docs/architecture.md).
 
 ---
 
 ## Repository Structure
 
 ```
-review_engine/         Core: critic, fixer, retriever, pipeline, schemas, remote RAG client
-rag_service/           Standalone FastAPI microservice for RAG (deployed on HF Space)
-review_store/          SQLite persistence layer with repository pattern
-api/                   FastAPI application with review and history endpoints
-ui/                    Streamlit apps: review interface + analytics dashboard
-scripts/               CLI, evaluation, smoke test, RAG index builder, deploy helpers
-examples/              Demo files: vulnerable_pr_demo.py, safe_pr_demo.py
-eval/                  Golden test cases for regression testing (12 cases)
-deploy/                HF Space Dockerfile, start script, deploy README
-docs/                  Architecture, API reference, GitHub Action, RAG service, Docker, deployment
-.github/workflows/     GitHub Action workflow definition
+client/                Next.js + TSX: Product UI, SSR, same-origin API proxy, admin log tails
+main-server/           Python + FastAPI: Auth, GitHub App, PostgreSQL persistence, Redis queues, admin logs
+rag-server/            Python + FastAPI: Private embedding microservice & Qdrant vector retrieval
+contracts/openapi/     OpenAPI 3.1 specifications for main-server and rag-server
+scripts/               Line-limit enforcer (check_source_line_limit.py) and ops helpers
+docs/                  Architecture, Operations, and Runbook documentation
+docker-compose.yml     Multi-container orchestrator (client, main-server, main-worker, rag-server, postgres, redis, qdrant)
+.env.example           Documented root environment configuration template
+legacy/                Archived previous single-node implementation
 ```
 
 ---

@@ -1,49 +1,163 @@
 services:
-
-  api:
-    build: .
-    image: codesec-audit-api:latest
-    container_name: codesec-api
-    command: uvicorn api.main:app --host 0.0.0.0 --port 8003
-    ports:
-      - "8003:8003"
-    volumes:
-      - codesec_data:/app/data/app
+  postgres:
+    image: postgres:16-alpine
+    container_name: codesec-postgres
+    restart: unless-stopped
     environment:
-      - CODESEC_DB_PATH=/app/data/app/reviews.db
-      - CODESEC_ENABLE_RAG=false
+      POSTGRES_DB: ${POSTGRES_DB:-codesec}
+      POSTGRES_USER: ${POSTGRES_USER:-codesec}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-codesec_dev_password}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8003/health"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-codesec} -d ${POSTGRES_DB:-codesec}"]
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 15s
+    networks:
+      - codesec_internal
 
-  review-ui:
-    build: .
-    image: codesec-audit-review-ui:latest
-    container_name: codesec-review-ui
-    command: streamlit run ui/app.py --server.port 8501 --server.address 0.0.0.0
-    ports:
-      - "8501:8501"
-    environment:
-      - CODESEC_API_URL=http://api:8003
-    depends_on:
-      api:
-        condition: service_healthy
+  redis:
+    image: redis:7-alpine
+    container_name: codesec-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - codesec_internal
 
-  dashboard:
-    build: .
-    image: codesec-audit-dashboard:latest
-    container_name: codesec-dashboard
-    command: streamlit run ui/dashboard.py --server.port 8502 --server.address 0.0.0.0
-    ports:
-      - "8502:8502"
+  qdrant:
+    image: qdrant/qdrant:v1.10.1
+    container_name: codesec-qdrant
+    restart: unless-stopped
+    volumes:
+      - qdrant_data:/qdrant/storage
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:6333/readyz || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - codesec_internal
+
+  rag-server:
+    build:
+      context: ./rag-server
+      dockerfile: Dockerfile
+    container_name: codesec-rag-server
+    restart: unless-stopped
     environment:
-      - CODESEC_API_URL=http://api:8003
+      APP_ENV: ${APP_ENV:-development}
+      QDRANT_URL: http://qdrant:6333
+      REDIS_URL: redis://redis:6379/0
+      RAG_SERVICE_TOKEN: ${RAG_SERVICE_TOKEN:-dev_rag_service_token_secret}
+      RAG_EMBEDDING_MODEL: ${RAG_EMBEDDING_MODEL:-sentence-transformers/all-MiniLM-L6-v2}
     depends_on:
-      api:
+      qdrant:
         condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8010/health/live"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    networks:
+      - codesec_internal
+
+  main-server:
+    build:
+      context: ./main-server
+      dockerfile: Dockerfile
+    container_name: codesec-main-server
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      APP_ENV: ${APP_ENV:-development}
+      DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://codesec:codesec_dev_password@postgres:5432/codesec}
+      REDIS_URL: redis://redis:6379/0
+      SESSION_SECRET: ${SESSION_SECRET:-dev_session_secret_change_in_production_32b}
+      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-}
+      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-}
+      GITHUB_APP_ID: ${GITHUB_APP_ID:-}
+      GITHUB_APP_PRIVATE_KEY: ${GITHUB_APP_PRIVATE_KEY:-}
+      GITHUB_WEBHOOK_SECRET: ${GITHUB_WEBHOOK_SECRET:-}
+      RAG_SERVICE_URL: http://rag-server:8010
+      RAG_SERVICE_TOKEN: ${RAG_SERVICE_TOKEN:-dev_rag_service_token_secret}
+      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
+      MAIN_SERVER_URL: ${MAIN_SERVER_URL:-http://localhost:8000}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rag-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health/live"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    networks:
+      - codesec_internal
+
+  main-worker:
+    build:
+      context: ./main-server
+      dockerfile: Dockerfile
+    container_name: codesec-main-worker
+    restart: unless-stopped
+    command: ["python", "-m", "app.jobs.worker"]
+    environment:
+      APP_ENV: ${APP_ENV:-development}
+      DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://codesec:codesec_dev_password@postgres:5432/codesec}
+      REDIS_URL: redis://redis:6379/0
+      RAG_SERVICE_URL: http://rag-server:8010
+      RAG_SERVICE_TOKEN: ${RAG_SERVICE_TOKEN:-dev_rag_service_token_secret}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      main-server:
+        condition: service_healthy
+    networks:
+      - codesec_internal
+
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: codesec-client
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      MAIN_SERVER_URL: http://main-server:8000
+    depends_on:
+      main-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    networks:
+      - codesec_internal
 
 volumes:
-  codesec_data:
+  postgres_data:
+  redis_data:
+  qdrant_data:
+
+networks:
+  codesec_internal:
+    driver: bridge
