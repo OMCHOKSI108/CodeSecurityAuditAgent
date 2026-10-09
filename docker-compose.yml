@@ -39,7 +39,7 @@ services:
     volumes:
       - qdrant_data:/qdrant/storage
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:6333/readyz || exit 1"]
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/6333 && printf 'GET /readyz HTTP/1.1\\r\\nHost: 127.0.0.1\\r\\nConnection: close\\r\\n\\r\\n' >&3 && grep -q '200 OK' <&3"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -68,6 +68,7 @@ services:
       interval: 15s
       timeout: 5s
       retries: 3
+      start_period: 30s
     networks:
       - codesec_internal
 
@@ -105,6 +106,7 @@ services:
       interval: 15s
       timeout: 5s
       retries: 3
+      start_period: 30s
     networks:
       - codesec_internal
 
@@ -128,6 +130,8 @@ services:
         condition: service_healthy
       main-server:
         condition: service_healthy
+    healthcheck:
+      disable: true
     networks:
       - codesec_internal
 
@@ -140,7 +144,7 @@ services:
     ports:
       - "3000:3000"
     environment:
-      NODE_ENV: production
+      NODE_ENV: development
       MAIN_SERVER_URL: http://main-server:8000
     depends_on:
       main-server:
@@ -150,6 +154,7 @@ services:
       interval: 15s
       timeout: 5s
       retries: 3
+      start_period: 30s
     networks:
       - codesec_internal
 

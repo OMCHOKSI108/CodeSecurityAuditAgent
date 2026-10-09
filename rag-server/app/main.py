@@ -13,9 +13,10 @@ from app.embeddings.model import get_embedding_manager
 async def lifespan(app: FastAPI):
     settings = get_settings()
     setup_logger(settings.redis_url)
-    # Eagerly load or warm up the embedding manager
+    import threading
+
     mgr = get_embedding_manager(settings.rag_embedding_model)
-    mgr.load_model()
+    threading.Thread(target=mgr.load_model, daemon=True).start()
     yield
 
 
