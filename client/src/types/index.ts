@@ -1,3 +1,7 @@
+export type Severity = "critical" | "high" | "medium" | "low";
+export type GateStatus = "BLOCKED" | "PASSED" | "IN_REVIEW";
+export type FindingStatus = "open" | "resolved" | "ignored";
+
 export interface UserProfile {
   id: string;
   github_id: string;
@@ -13,12 +17,92 @@ export interface UserProfile {
 export interface Finding {
   id: string;
   cwe_id: string;
-  severity: "critical" | "high" | "medium" | "low";
+  severity: Severity;
   title: string;
   file_path: string;
   line_number?: number;
   code_snippet?: string;
   suggested_fix?: string;
+  why_it_matters?: string;
+  attack_scenario?: string;
+  owasp_category?: string;
+  confidence?: number;
+  security_principle?: string;
+  reasoning_summary?: string;
+  status?: FindingStatus;
+  detected_at?: string;
+  repository?: string;
+}
+
+export interface PullRequest {
+  id: string;
+  pr_number: number;
+  title: string;
+  repository: string;
+  author: string;
+  author_avatar?: string;
+  security_score: number;
+  findings_summary: {
+    critical: number;
+    high: number;
+    medium: number;
+    low: number;
+  };
+  gate_status: GateStatus;
+  scanned_at: string;
+  commit_sha?: string;
+  gate_reason?: string;
+  findings: Finding[];
+}
+
+export interface Repository {
+  id: string;
+  name: string;
+  language: string;
+  security_score: number;
+  critical_count: number;
+  high_count: number;
+  medium_count: number;
+  open_findings_count: number;
+  last_scan: string;
+  status: "Blocked" | "Protected" | "Warning" | "Passed";
+  pr_count?: number;
+  stars?: number;
+}
+
+export interface SecurityPolicy {
+  block_critical: boolean;
+  block_secrets: boolean;
+  block_high: boolean;
+  block_medium: boolean;
+  min_security_score: number;
+  confidence_threshold: number;
+  secret_detection: boolean;
+}
+
+export interface TeamMember {
+  id: string;
+  name: string;
+  email: string;
+  role: "Admin" | "Security Lead" | "Developer" | "Viewer";
+  prs_reviewed: number;
+  findings_resolved: number;
+  last_active: string;
+  avatar_url?: string;
+}
+
+export interface ReportSummary {
+  period: string;
+  repos_scanned: number;
+  prs_scanned: number;
+  vulnerabilities_detected: number;
+  critical_vulnerabilities: number;
+  resolved_vulnerabilities: number;
+  avg_remediation_hours: {
+    critical: number;
+    high: number;
+    medium_days: number;
+  };
 }
 
 export interface ReviewRecord {

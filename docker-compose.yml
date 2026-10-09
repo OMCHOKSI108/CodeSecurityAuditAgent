@@ -43,6 +43,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    ports:
+      - "6333:6333"
     networks:
       - codesec_internal
 
@@ -52,6 +54,8 @@ services:
       dockerfile: Dockerfile
     container_name: codesec-rag-server
     restart: unless-stopped
+    ports:
+      - "8010:8010"
     environment:
       APP_ENV: ${APP_ENV:-development}
       QDRANT_URL: http://qdrant:6333
