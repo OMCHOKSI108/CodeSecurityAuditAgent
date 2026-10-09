@@ -11,7 +11,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <style>{`
+        <style
+          dangerouslySetInnerHTML={{
+            __html: `
           * { box-sizing: border-box; margin: 0; padding: 0; }
           body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0f172a; color: #f8fafc; line-height: 1.5; }
           header { display: flex; justify-content: space-between; align-items: center; padding: 1rem 2rem; background: #1e293b; border-bottom: 1px solid #334155; }
@@ -31,7 +33,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           th, td { text-align: left; padding: 0.75rem; border-bottom: 1px solid #334155; }
           th { color: #94a3b8; font-size: 0.9rem; text-transform: uppercase; }
           footer { text-align: center; padding: 2rem; color: #64748b; font-size: 0.875rem; border-top: 1px solid #334155; }
-        `}</style>
+        `,
+          }}
+        />
       </head>
       <body>
         <header>

@@ -37,6 +37,42 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.get("/", tags=["Root"])
+def root_index():
+    return {
+        "service": "codesec-main-server",
+        "description": "CodeSecAudit Core Security & Review Orchestrator",
+        "version": settings.app_version,
+        "docs_url": "/docs",
+        "redoc_url": "/redoc",
+        "endpoints": {
+            "health_and_system": [
+                {"method": "GET", "path": "/health/live", "description": "Liveness probe"},
+                {"method": "GET", "path": "/health/ready", "description": "Readiness probe (Postgres, Redis, RAG)"},
+                {"method": "GET", "path": "/version", "description": "Service version and git SHA"}
+            ],
+            "authentication": [
+                {"method": "GET", "path": "/v1/auth/github/start", "description": "Initiate GitHub OAuth with PKCE"},
+                {"method": "GET", "path": "/v1/auth/github/callback", "description": "GitHub OAuth callback & session creation"},
+                {"method": "POST", "path": "/v1/auth/logout", "description": "Terminate active session"},
+                {"method": "GET", "path": "/v1/me", "description": "Get current authenticated user & org"}
+            ],
+            "webhooks": [
+                {"method": "POST", "path": "/v1/webhooks/github", "description": "Intake signed GitHub pull request events"}
+            ],
+            "reviews": [
+                {"method": "POST", "path": "/v1/reviews", "description": "Enqueue a manual review job"},
+                {"method": "GET", "path": "/v1/reviews", "description": "List reviews (tenant-scoped)"},
+                {"method": "GET", "path": "/v1/reviews/{id}", "description": "Get review detail & findings"}
+            ],
+            "admin_logs": [
+                {"method": "GET", "path": "/main-server-logs", "description": "Tail sanitized main-server logs (Admin only)"},
+                {"method": "GET", "path": "/client-server-logs", "description": "Tail sanitized client logs (Admin only)"},
+                {"method": "GET", "path": "/rag-server-logs", "description": "Tail sanitized RAG logs (Admin only)"}
+            ]
+        }
+    }
+
 app.include_router(health_router)
 app.include_router(auth_router)
 app.include_router(webhooks_router)
