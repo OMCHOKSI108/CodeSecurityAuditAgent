@@ -58,10 +58,10 @@ export const MOCK_FINDINGS: Finding[] = [
     status: "open",
     detected_at: "20 minutes ago",
     why_it_matters: "Hardcoded private API keys committed to source control allow attackers with read access to make unauthorized financial transfers.",
-    attack_scenario: "Attacker clones repo and inspects git history to obtain live Stripe Secret Key: sk_test_dummy_mock_key",
+    attack_scenario: "Attacker clones repo and inspects git history to obtain unencrypted secret key.",
     security_principle: "Store secrets strictly in environment variables or managed secret vaults. Never commit credentials to version control.",
-    reasoning_summary: "High-entropy credential pattern matching Stripe Live Secret Key format.",
-    code_snippet: "export const stripeKey = 'sk_test_dummy_mock_key';",
+    reasoning_summary: "High-entropy credential pattern matching API secret key format.",
+    code_snippet: "export const stripeKey = 'sk_test_dummy_mock_key_for_testing_only';",
     suggested_fix: "export const stripeKey = process.env.STRIPE_SECRET_KEY || '';\nif (!stripeKey) throw new Error('Missing STRIPE_SECRET_KEY');",
   },
   {

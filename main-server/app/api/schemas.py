@@ -65,3 +65,39 @@ class LogEntry(BaseModel):
     level: str
     message: str
     service: str
+
+
+class RepositoryResponse(BaseModel):
+    id: str
+    name: str
+    full_name: str
+    github_repo_id: str
+    is_private: bool = False
+    language: str = "TypeScript / Python"
+    security_score: int = 100
+    critical_count: int = 0
+    high_count: int = 0
+    medium_count: int = 0
+    open_findings_count: int = 0
+    last_scan: str = "Recent"
+    status: str = "Protected"
+
+
+class SecurityPolicySchema(BaseModel):
+    block_critical: bool = True
+    block_secrets: bool = True
+    block_high: bool = True
+    block_medium: bool = False
+    min_security_score: int = 80
+    confidence_threshold: int = 70
+    secret_detection: bool = True
+
+
+class TeamMemberResponse(BaseModel):
+    id: str
+    name: str
+    email: str
+    role: str
+    avatar: str
+    last_active: str
+

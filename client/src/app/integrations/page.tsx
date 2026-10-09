@@ -1,8 +1,11 @@
 "use client";
 
 import React, { useState } from "react";
-import { AppLayout } from "@/components/layout/AppLayout";
-import { GitHubIcon, ShieldCheckIcon } from "@/components/ui/Icons";
+import { GitHubIcon } from "@/components/ui/Icons";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
+import { Badge } from "@/components/ui/Badge";
 
 export default function IntegrationsPage() {
   const [testingWebhook, setTestingWebhook] = useState(false);
@@ -25,125 +28,97 @@ export default function IntegrationsPage() {
   ];
 
   return (
-    <AppLayout>
-      <div className="max-w-5xl mx-auto space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">Integrations &amp; Webhooks</h1>
-          <p className="text-xs text-slate-400 mt-1">
-            Connect CI/CD pipelines, issue trackers, and alerting infrastructure.
-          </p>
+    <div className="space-y">
+      <PageHeader
+        title="Integrations & Webhooks"
+        subtitle="Connect CI/CD pipelines, issue trackers, and alerting infrastructure."
+      />
+
+      {testResult && (
+        <div className="p-3 rounded-lg border text-xs flex-between" style={{ backgroundColor: "var(--pass-bg)", borderColor: "var(--pass-border)", color: "var(--pass-color)" }}>
+          <span>✓ {testResult}</span>
+          <button onClick={() => setTestResult(null)} className="text-muted hover:text-main">✕</button>
         </div>
+      )}
 
-        {testResult && (
-          <div className="bg-emerald-950/80 border border-emerald-800 text-emerald-200 px-4 py-3 rounded-lg text-sm flex items-center justify-between">
-            <span>✓ {testResult}</span>
-            <button onClick={() => setTestResult(null)} className="text-slate-400 hover:text-white">✕</button>
-          </div>
-        )}
-
-        {/* GitHub Primary Integration */}
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
-          <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-white">
-                <GitHubIcon className="w-6 h-6" />
+      {/* GitHub Primary Integration */}
+      <Card
+        title={
+          <div className="flex items-center gap-3">
+            <GitHubIcon size={24} className="text-main" />
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-main">GitHub App</span>
+                <Badge variant="passed">CONNECTED</Badge>
               </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <h2 className="text-base font-bold text-white">GitHub App</h2>
-                  <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-950 text-emerald-400 border border-emerald-800">
-                    CONNECTED
-                  </span>
-                </div>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  Installed on organization <span className="font-semibold text-slate-200">Acme Engineering</span> &bull; 4 Repositories Selected
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <button
-                onClick={handleTestWebhook}
-                disabled={testingWebhook}
-                className="px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-sky-400 border border-slate-700 font-semibold text-xs transition disabled:opacity-50"
-              >
-                {testingWebhook ? "Sending Ping..." : "Test Webhook"}
-              </button>
-              <a
-                href="https://github.com/settings/apps"
-                target="_blank"
-                rel="noreferrer"
-                className="px-3.5 py-2 rounded-lg bg-sky-500 hover:bg-sky-400 text-slate-950 font-semibold text-xs transition"
-              >
-                Configure on GitHub ↗
-              </a>
+              <p className="text-xs text-muted font-normal mt-0.5">
+                Installed on org <strong className="text-main">Acme Engineering</strong> &bull; 4 Repositories
+              </p>
             </div>
           </div>
-
-          <div className="bg-slate-950/70 p-4 rounded-lg border border-slate-800 space-y-2 text-xs">
-            <div className="flex items-center justify-between">
-              <span className="text-slate-400">Target Webhook URL:</span>
-              <span className="font-mono text-slate-300">https://api.codesec.ai/api/webhooks/github</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-slate-400">Permissions granted:</span>
-              <span className="text-slate-300">Pull Requests (Read &amp; Write), Checks (Read &amp; Write)</span>
-            </div>
+        }
+        actions={
+          <div className="flex items-center gap-2">
+            <Button variant="secondary" size="sm" loading={testingWebhook} onClick={handleTestWebhook}>
+              Test Webhook
+            </Button>
+            <a href="https://github.com/settings/apps" target="_blank" rel="noreferrer">
+              <Button variant="primary" size="sm">Configure on GitHub ↗</Button>
+            </a>
+          </div>
+        }
+      >
+        <div className="p-3.5 rounded border text-xs flex flex-col gap-2" style={{ backgroundColor: "var(--bg-surface-elevated)", borderColor: "var(--border-subtle)" }}>
+          <div className="flex-between">
+            <span className="text-muted">Target Webhook URL:</span>
+            <code className="text-accent font-mono">https://api.codesec.ai/api/webhooks/github</code>
+          </div>
+          <div className="flex-between">
+            <span className="text-muted">Permissions granted:</span>
+            <span className="text-main">Pull Requests (Read &amp; Write), Checks (Read &amp; Write)</span>
           </div>
         </div>
+      </Card>
 
-        {/* Webhook Delivery Log */}
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
-          <h3 className="text-sm font-semibold text-slate-200 mb-3">Recent Webhook Deliveries</h3>
-          <div className="space-y-2">
-            {webhookDeliveries.map((del) => (
-              <div key={del.id} className="p-3 bg-slate-950/60 border border-slate-800 rounded-lg flex items-center justify-between text-xs">
-                <div className="flex items-center gap-3">
-                  <span className="px-2 py-0.5 rounded font-mono font-bold bg-emerald-950 text-emerald-400 border border-emerald-800">
-                    HTTP {del.status}
-                  </span>
-                  <span className="font-mono text-slate-200">{del.event}</span>
-                  <span className="text-slate-400">({del.repo})</span>
-                </div>
-                <div className="flex items-center gap-4 text-slate-400">
-                  <span className="font-mono">{del.latency}</span>
-                  <span>{del.time}</span>
-                </div>
+      {/* Webhook Delivery Log */}
+      <Card title="Recent Webhook Deliveries" description="Audit log of incoming webhook events received from GitHub">
+        <div className="flex flex-col gap-2">
+          {webhookDeliveries.map((del) => (
+            <div key={del.id} className="p-3 rounded border flex-between text-xs" style={{ backgroundColor: "var(--bg-surface-elevated)", borderColor: "var(--border-subtle)" }}>
+              <div className="flex items-center gap-3">
+                <Badge variant="passed">HTTP {del.status}</Badge>
+                <span className="font-mono text-main">{del.event}</span>
+                <span className="text-muted font-mono">({del.repo})</span>
               </div>
-            ))}
-          </div>
+              <div className="flex items-center gap-4 text-muted">
+                <span className="font-mono">{del.latency}</span>
+                <span>{del.time}</span>
+              </div>
+            </div>
+          ))}
         </div>
+      </Card>
 
-        {/* Available Connectors */}
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
-          <h3 className="text-sm font-semibold text-slate-200 mb-4">Available DevSecOps Connectors</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-            <div className="p-4 bg-slate-950 rounded-lg border border-slate-850 flex flex-col justify-between space-y-3">
+      {/* Available Connectors */}
+      <Card title="Available DevSecOps Connectors" description="Integrate notifications and ticketing with your existing toolchain">
+        <div className="grid-2">
+          {[
+            { title: "Slack Alerts", desc: "Post instant PR block notifications to #security-alerts.", action: "Configure" },
+            { title: "Jira Software", desc: "Automatically create security remediation tickets on blocked PRs.", action: "Connect" },
+            { title: "Datadog & SIEM", desc: "Stream vulnerability telemetry into your security operations center.", action: "Connect" },
+          ].map((c) => (
+            <div key={c.title} className="p-4 rounded border flex flex-col justify-between gap-3 text-xs" style={{ backgroundColor: "var(--bg-surface-elevated)", borderColor: "var(--border-subtle)" }}>
               <div>
-                <span className="font-semibold text-slate-200 block text-sm">Slack Alerts</span>
-                <p className="text-slate-400 mt-1">Post instant PR block notifications to #security-alerts.</p>
+                <span className="font-semibold text-main text-sm block">{c.title}</span>
+                <p className="text-muted mt-1">{c.desc}</p>
               </div>
-              <button onClick={() => alert("Slack integration configured.")} className="px-3 py-1.5 rounded bg-slate-800 text-sky-400 border border-slate-700 font-medium">Configure</button>
+              <Button variant="secondary" size="sm" onClick={() => alert(`${c.title} connection opened.`)}>
+                {c.action}
+              </Button>
             </div>
-
-            <div className="p-4 bg-slate-950 rounded-lg border border-slate-850 flex flex-col justify-between space-y-3">
-              <div>
-                <span className="font-semibold text-slate-200 block text-sm">Jira Software</span>
-                <p className="text-slate-400 mt-1">Automatically create security remediation tickets on blocked PRs.</p>
-              </div>
-              <button onClick={() => alert("Jira integration coming soon.")} className="px-3 py-1.5 rounded bg-slate-800 text-slate-300 border border-slate-700 font-medium">Connect</button>
-            </div>
-
-            <div className="p-4 bg-slate-950 rounded-lg border border-slate-850 flex flex-col justify-between space-y-3">
-              <div>
-                <span className="font-semibold text-slate-200 block text-sm">Datadog &amp; SIEM</span>
-                <p className="text-slate-400 mt-1">Stream vulnerability telemetry into your security operations center.</p>
-              </div>
-              <button onClick={() => alert("Datadog integration coming soon.")} className="px-3 py-1.5 rounded bg-slate-800 text-slate-300 border border-slate-700 font-medium">Connect</button>
-            </div>
-          </div>
+          ))}
         </div>
-      </div>
-    </AppLayout>
+      </Card>
+    </div>
   );
 }

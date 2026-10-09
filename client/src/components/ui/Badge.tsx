@@ -1,52 +1,89 @@
 import React from "react";
 import { Severity, GateStatus } from "@/types";
 
-export function SeverityBadge({ severity }: { severity: Severity | string }) {
-  const norm = severity.toLowerCase();
-  let badgeClass = "badge-low";
-  let icon = "🔵";
-  if (norm === "critical") {
-    badgeClass = "badge-critical";
-    icon = "🔴";
-  } else if (norm === "high") {
-    badgeClass = "badge-high";
-    icon = "🟠";
-  } else if (norm === "medium") {
-    badgeClass = "badge-medium";
-    icon = "🟡";
-  }
+export type BadgeVariant =
+  | "critical"
+  | "high"
+  | "medium"
+  | "low"
+  | "passed"
+  | "blocked"
+  | "in_review"
+  | "warning"
+  | "protected"
+  | "open"
+  | "resolved";
 
+export interface BadgeProps {
+  variant?: BadgeVariant;
+  icon?: React.ReactNode;
+  children: React.ReactNode;
+  className?: string;
+}
+
+export function Badge({
+  variant = "low",
+  icon,
+  children,
+  className = "",
+}: BadgeProps) {
   return (
-    <span className={`badge ${badgeClass} inline-flex items-center gap-1.5`}>
-      <span>{icon}</span>
-      <span>{severity.toUpperCase()}</span>
+    <span className={`badge badge-${variant} ${className}`.trim()}>
+      {icon && <span className="inline-flex shrink-0">{icon}</span>}
+      <span>{children}</span>
     </span>
   );
 }
 
-export function GateBadge({ status, text }: { status: GateStatus | string; text?: string }) {
+export function SeverityBadge({ severity }: { severity: Severity | string }) {
+  const norm = severity.toLowerCase();
+  let badgeClass: BadgeVariant = "low";
+  let icon = "🔵";
+
+  if (norm === "critical") {
+    badgeClass = "critical";
+    icon = "🔴";
+  } else if (norm === "high") {
+    badgeClass = "high";
+    icon = "🟠";
+  } else if (norm === "medium") {
+    badgeClass = "medium";
+    icon = "🟡";
+  }
+
+  return (
+    <Badge variant={badgeClass} icon={icon}>
+      {severity.toUpperCase()}
+    </Badge>
+  );
+}
+
+export function GateBadge({
+  status,
+  text,
+}: {
+  status: GateStatus | string;
+  text?: string;
+}) {
   const norm = status.toUpperCase();
   if (norm === "BLOCKED" || norm === "REQUEST_CHANGES") {
     return (
-      <span className="badge badge-blocked inline-flex items-center gap-1.5">
-        <span>🔴</span>
-        <span>{text || "BLOCKED"}</span>
-      </span>
+      <Badge variant="blocked" icon="🔴">
+        {text || "BLOCKED"}
+      </Badge>
     );
   }
   if (norm === "PASSED" || norm === "APPROVE") {
     return (
-      <span className="badge badge-passed inline-flex items-center gap-1.5">
-        <span>🟢</span>
-        <span>{text || "PASSED"}</span>
-      </span>
+      <Badge variant="passed" icon="🟢">
+        {text || "PASSED"}
+      </Badge>
     );
   }
   return (
-    <span className="badge badge-in_review inline-flex items-center gap-1.5">
-      <span>⏳</span>
-      <span>{text || "IN REVIEW"}</span>
-    </span>
+    <Badge variant="in_review" icon="⏳">
+      {text || "IN REVIEW"}
+    </Badge>
   );
 }
 
@@ -54,32 +91,28 @@ export function StatusBadge({ status }: { status: string }) {
   const norm = status.toLowerCase();
   if (norm === "blocked" || norm === "open") {
     return (
-      <span className="badge badge-blocked inline-flex items-center gap-1.5">
-        <span>🔴</span>
-        <span className="capitalize">{status}</span>
-      </span>
+      <Badge variant="blocked" icon="🔴">
+        {status.toUpperCase()}
+      </Badge>
     );
   }
   if (norm === "protected" || norm === "passed" || norm === "resolved") {
     return (
-      <span className="badge badge-passed inline-flex items-center gap-1.5">
-        <span>🟢</span>
-        <span className="capitalize">{status}</span>
-      </span>
+      <Badge variant="passed" icon="🟢">
+        {status.toUpperCase()}
+      </Badge>
     );
   }
   if (norm === "warning") {
     return (
-      <span className="badge badge-high inline-flex items-center gap-1.5">
-        <span>🟠</span>
-        <span className="capitalize">{status}</span>
-      </span>
+      <Badge variant="warning" icon="🟠">
+        {status.toUpperCase()}
+      </Badge>
     );
   }
   return (
-    <span className="badge badge-low inline-flex items-center gap-1.5">
-      <span>⚪</span>
-      <span className="capitalize">{status}</span>
-    </span>
+    <Badge variant="low" icon="⚪">
+      {status.toUpperCase()}
+    </Badge>
   );
 }

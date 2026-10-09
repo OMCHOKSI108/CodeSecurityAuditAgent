@@ -16,7 +16,7 @@ class QdrantStore:
         if self._client is None:
             try:
                 from qdrant_client import QdrantClient
-                self._client = QdrantClient(url=self.qdrant_url, timeout=10.0)
+                self._client = QdrantClient(url=self.qdrant_url, timeout=10.0, check_compatibility=False)
             except Exception as e:
                 logger.warning(f"Could not connect to Qdrant: {e}")
                 return None
@@ -70,19 +70,35 @@ class QdrantStore:
                 ]
             )
 
-        results = client.search(
-            collection_name=self.collection_name,
-            query_vector=query_vector,
-            query_filter=query_filter,
-            limit=top_k,
-        )
+        try:
+            if hasattr(client, "collection_exists") and not client.collection_exists(self.collection_name):
+                return []
+            if hasattr(client, "query_points"):
+                res = client.query_points(
+                    collection_name=self.collection_name,
+                    query=query_vector,
+                    query_filter=query_filter,
+                    limit=top_k,
+                )
+                results = res.points
+            elif hasattr(client, "search"):
+                results = client.search(
+                    collection_name=self.collection_name,
+                    query_vector=query_vector,
+                    query_filter=query_filter,
+                    limit=top_k,
+                )
+            else:
+                return []
+        except Exception:
+            return []
 
         formatted = []
         for r in results:
             payload = r.payload or {}
             formatted.append({
                 "score": float(r.score),
-                "document_id": str(r.id),
+                "document_id": str(payload.get("original_id") or r.id),
                 "guidance_text": payload.get("content", ""),
                 "source_url": payload.get("source_url", ""),
                 "section_title": payload.get("section", ""),

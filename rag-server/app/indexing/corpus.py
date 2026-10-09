@@ -51,11 +51,17 @@ def index_chunks(qdrant_store, embedding_mgr, chunks: list[dict[str, Any]], batc
 
         points = []
         for doc, vec in zip(batch, vectors):
-            doc_id = str(doc.get("id") or uuid.uuid4())
+            raw_id = str(doc.get("id") or "")
+            try:
+                doc_id = str(uuid.UUID(raw_id))
+            except ValueError:
+                doc_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, raw_id)) if raw_id else str(uuid.uuid4())
+
             cwe_id = doc.get("cwe_id", "")
             cwe_list = [cwe_id] if isinstance(cwe_id, str) and cwe_id else (cwe_id or [])
 
             payload = {
+                "original_id": raw_id,
                 "title": doc.get("title", ""),
                 "section": doc.get("section_title", "") or doc.get("section", ""),
                 "content": doc.get("content", "") or doc.get("text", ""),

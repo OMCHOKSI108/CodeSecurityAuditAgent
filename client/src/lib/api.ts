@@ -71,24 +71,44 @@ export async function fetchPullRequestById(id: string): Promise<PullRequest | nu
 }
 
 export async function fetchRepositories(): Promise<Repository[]> {
+  try {
+    const res = await fetch("/api/repositories", { credentials: "include" });
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) return data;
+    }
+  } catch {}
   return MOCK_REPOSITORIES;
 }
 
 export async function fetchRepositoryById(id: string): Promise<Repository | null> {
-  const found = MOCK_REPOSITORIES.find((r) => r.id === id || r.name === id);
+  const all = await fetchRepositories();
+  const found = all.find((r) => r.id === id || r.name === id);
   return found || MOCK_REPOSITORIES[0];
 }
 
 export async function fetchFindings(): Promise<Finding[]> {
+  try {
+    const res = await fetch("/api/findings", { credentials: "include" });
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) return data;
+    }
+  } catch {}
   return MOCK_FINDINGS;
 }
 
 export async function fetchFindingById(id: string): Promise<Finding | null> {
-  const found = MOCK_FINDINGS.find((f) => f.id === id);
+  const all = await fetchFindings();
+  const found = all.find((f) => f.id === id);
   return found || MOCK_FINDINGS[0];
 }
 
 export async function fetchSecurityPolicy(): Promise<SecurityPolicy> {
+  try {
+    const res = await fetch("/api/policies", { credentials: "include" });
+    if (res.ok) return await res.json();
+  } catch {}
   if (typeof window !== "undefined") {
     const stored = localStorage.getItem("codesec_policy");
     if (stored) {
@@ -101,6 +121,14 @@ export async function fetchSecurityPolicy(): Promise<SecurityPolicy> {
 }
 
 export async function saveSecurityPolicy(policy: SecurityPolicy): Promise<boolean> {
+  try {
+    await fetch("/api/policies", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(policy),
+      credentials: "include",
+    });
+  } catch {}
   if (typeof window !== "undefined") {
     localStorage.setItem("codesec_policy", JSON.stringify(policy));
   }
@@ -108,6 +136,13 @@ export async function saveSecurityPolicy(policy: SecurityPolicy): Promise<boolea
 }
 
 export async function fetchTeamMembers() {
+  try {
+    const res = await fetch("/api/team", { credentials: "include" });
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) return data;
+    }
+  } catch {}
   return MOCK_TEAM;
 }
 

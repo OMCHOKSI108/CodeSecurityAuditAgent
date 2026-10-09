@@ -87,6 +87,8 @@ def trigger_index(req: IndexRequest):
     url = req.corpus_url or "https://huggingface.co/datasets/OMCHOKSI108/CodeSecAudit-RAG/resolve/main/rag/rag_corpus.jsonl.gz"
     try:
         chunks = load_corpus_from_url(url)
+        if req.max_documents and req.max_documents > 0:
+            chunks = chunks[: req.max_documents]
         embed = get_embedding_manager(settings.rag_embedding_model)
         qdrant = _get_qdrant()
         indexed = index_chunks(qdrant, embed, chunks)

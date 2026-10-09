@@ -4,9 +4,13 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.auth import router as auth_router
+from app.api.findings import router as findings_router
 from app.api.health import router as health_router
 from app.api.logs import router as logs_router
+from app.api.policies import router as policies_router
+from app.api.repositories import router as repositories_router
 from app.api.reviews import router as reviews_router
+from app.api.team import router as team_router
 from app.api.webhooks import router as webhooks_router
 from app.core.config import get_settings
 from app.core.logging import setup_logger
@@ -75,6 +79,10 @@ def root_index():
 
 app.include_router(health_router)
 app.include_router(auth_router)
+app.include_router(repositories_router)
+app.include_router(findings_router)
+app.include_router(policies_router)
+app.include_router(team_router)
 app.include_router(webhooks_router)
 app.include_router(reviews_router)
 app.include_router(logs_router)

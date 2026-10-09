@@ -18,8 +18,8 @@ class EmbeddingManager:
             try:
                 from sentence_transformers import SentenceTransformer
                 logger.info(f"Loading embedding model: {self.model_name}")
-                self._model = SentenceTransformer(self.model_name)
-                self._dimension = self._model.get_sentence_embedding_dimension()
+                get_dim = getattr(self._model, "get_embedding_dimension", getattr(self._model, "get_sentence_embedding_dimension", None))
+                self._dimension = get_dim() if get_dim else 384
             except Exception as e:
                 logger.error(f"Failed to load embedding model: {e}")
                 self._model = None

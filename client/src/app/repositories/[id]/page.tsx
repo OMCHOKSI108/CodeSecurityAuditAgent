@@ -3,11 +3,15 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { AppLayout } from "@/components/layout/AppLayout";
 import { Repository, PullRequest, Finding } from "@/types";
 import { fetchRepositoryById, fetchPullRequests, fetchFindings } from "@/lib/api";
 import { ArrowLeftIcon, RepoIcon, ShieldCheckIcon, GitHubIcon } from "@/components/ui/Icons";
-import { GateBadge, SeverityBadge } from "@/components/ui/Badge";
+import { GateBadge } from "@/components/ui/Badge";
+import { MetricCard } from "@/components/ui/MetricCard";
+import { Card } from "@/components/ui/Card";
+import { DataTable, Column } from "@/components/ui/DataTable";
+import { Button } from "@/components/ui/Button";
+import { SecurityFindingCard } from "@/components/ui/SecurityFindingCard";
 
 export default function RepositoryDetailPage() {
   const params = useParams();
@@ -17,146 +21,108 @@ export default function RepositoryDetailPage() {
   const [findings, setFindings] = useState<Finding[]>([]);
 
   useEffect(() => {
-    fetchRepositoryById(repoName).then((data) => {
-      if (data) setRepo(data);
-    });
-    fetchPullRequests().then((data) => {
-      setPrs(data.filter((p) => p.repository === repoName));
-    });
-    fetchFindings().then((data) => {
-      setFindings(data.filter((f) => f.repository === repoName));
-    });
+    fetchRepositoryById(repoName).then((data) => { if (data) setRepo(data); });
+    fetchPullRequests().then((d) => setPrs(d.filter((p) => p.repository === repoName)));
+    fetchFindings().then((d) => setFindings(d.filter((f) => f.repository === repoName)));
   }, [repoName]);
 
   if (!repo) {
     return (
-      <AppLayout>
-        <div className="p-8 text-center text-slate-400">Loading repository details...</div>
-      </AppLayout>
+      <div className="py-16 text-center text-muted text-xs">
+        <span className="btn-spinner mr-2" />Loading repository details...
+      </div>
     );
   }
 
+  const prColumns: Column<PullRequest>[] = [
+    {
+      key: "title",
+      header: "Pull Request",
+      render: (p) => (
+        <Link href={`/pull-requests/${p.pr_number}`} className="font-medium hover:underline flex items-center gap-1.5" style={{ color: "var(--text-main)" }}>
+          <span className="font-mono text-xs" style={{ color: "var(--accent)" }}>#{p.pr_number}</span>
+          <span>{p.title}</span>
+        </Link>
+      ),
+    },
+    {
+      key: "author",
+      header: "Author",
+      render: (p) => <span className="text-xs text-muted">{p.author}</span>,
+    },
+    {
+      key: "security_score",
+      header: "Score",
+      render: (p) => (
+        <span className="font-mono font-bold text-xs" style={{ color: p.security_score >= 85 ? "var(--pass-color)" : "var(--crit-color)" }}>
+          {p.security_score}/100
+        </span>
+      ),
+    },
+    {
+      key: "gate_status",
+      header: "Gate Verdict",
+      render: (p) => <GateBadge status={p.gate_status} />,
+    },
+    {
+      key: "scanned_at",
+      header: "Audited",
+      render: (p) => <span className="text-xs text-dim">{p.scanned_at}</span>,
+    },
+  ];
+
   return (
-    <AppLayout>
-      <div className="space-y-6">
-        <div>
-          <Link
-            href="/repositories"
-            className="inline-flex items-center gap-2 text-xs font-medium text-slate-400 hover:text-sky-400 transition mb-3"
-          >
-            <ArrowLeftIcon className="w-4 h-4" />
-            Back to Repositories
-          </Link>
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-sky-400">
-                <RepoIcon className="w-5 h-5" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-white tracking-tight flex items-center gap-2">
-                  {repo.name}
-                  <span className="px-2 py-0.5 rounded text-xs font-normal bg-slate-800 text-slate-300 border border-slate-700">
-                    {repo.language}
-                  </span>
-                </h1>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  Default branch: <span className="font-mono text-slate-300">main</span> &bull; Webhook: <span className="text-emerald-400">Active</span>
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2.5">
-              <span className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-950/60 text-emerald-400 border border-emerald-800 flex items-center gap-1.5">
-                <ShieldCheckIcon className="w-4 h-4" />
-                Branch Protection Active
-              </span>
-              <a
-                href={`https://github.com/example/${repo.name}`}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-semibold text-xs transition"
-              >
-                <GitHubIcon className="w-3.5 h-3.5" />
-                Open in GitHub ↗
-              </a>
-            </div>
-          </div>
-        </div>
-
-        {/* 4 Stat Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl">
-            <span className="text-xs text-slate-400 block">Security Score</span>
-            <span className="text-2xl font-bold text-emerald-400">{repo.security_score}</span>
-            <span className="text-xs text-slate-500"> / 100</span>
-          </div>
-          <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl">
-            <span className="text-xs text-slate-400 block">PRs Audited</span>
-            <span className="text-2xl font-bold text-slate-100">{repo.pr_count || 42}</span>
-          </div>
-          <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl">
-            <span className="text-xs text-slate-400 block">Open Vulnerabilities</span>
-            <span className="text-2xl font-bold text-rose-400">{repo.open_findings_count}</span>
-          </div>
-          <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl">
-            <span className="text-xs text-slate-400 block">Mean Time to Fix</span>
-            <span className="text-2xl font-bold text-sky-400">3.4 hrs</span>
-          </div>
-        </div>
-
-        {/* PR History */}
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
-          <h2 className="text-base font-semibold text-slate-200 mb-4">Pull Request Audit History</h2>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="text-xs uppercase text-slate-400 border-b border-slate-800">
-                <tr>
-                  <th className="pb-3 font-semibold">PR</th>
-                  <th className="pb-3 font-semibold">Author</th>
-                  <th className="pb-3 font-semibold">Score</th>
-                  <th className="pb-3 font-semibold">Gate Verdict</th>
-                  <th className="pb-3 font-semibold">Audited</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-800/80">
-                {prs.map((p) => (
-                  <tr key={p.id} className="hover:bg-slate-850/50">
-                    <td className="py-3">
-                      <Link href={`/pull-requests/${p.pr_number}`} className="font-medium text-slate-100 hover:text-sky-400">
-                        #{p.pr_number} - {p.title}
-                      </Link>
-                    </td>
-                    <td className="py-3 text-slate-300 text-xs">{p.author}</td>
-                    <td className="py-3 font-semibold text-xs text-sky-400">{p.security_score}/100</td>
-                    <td className="py-3"><GateBadge status={p.gate_status} /></td>
-                    <td className="py-3 text-slate-400 text-xs">{p.scanned_at}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* Active findings */}
-        {findings.length > 0 && (
-          <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
-            <h2 className="text-base font-semibold text-slate-200 mb-3">Active Repository Vulnerabilities</h2>
-            <div className="space-y-3">
-              {findings.map((f) => (
-                <div key={f.id} className="p-3 bg-slate-950/60 border border-slate-800 rounded-lg flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <SeverityBadge severity={f.severity} />
-                    <span className="font-medium text-sm text-slate-200">{f.title}</span>
-                    <span className="text-xs font-mono text-slate-400">{f.file_path}:{f.line_number}</span>
-                  </div>
-                  <Link href={`/findings/${f.id}`} className="text-xs text-sky-400 hover:underline">
-                    View Analysis →
-                  </Link>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+    <div className="space-y">
+      <div className="flex items-center gap-2 text-xs">
+        <Link href="/repositories" className="text-muted hover:text-main flex items-center gap-1 font-medium">
+          <ArrowLeftIcon size={14} /><span>Repositories</span>
+        </Link>
+        <span className="text-dim">/</span>
+        <span className="crumb-badge font-mono">{repo.name}</span>
       </div>
-    </AppLayout>
+
+      <div className="flex-between items-start gap-4 flex-wrap">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-lg flex items-center justify-center border" style={{ backgroundColor: "var(--bg-surface-elevated)", borderColor: "var(--border-subtle)", color: "var(--accent)" }}>
+            <RepoIcon size={20} />
+          </div>
+          <div>
+            <div className="flex items-center gap-2.5">
+              <h1 className="page-title mb-0">{repo.name}</h1>
+              <span className="crumb-badge text-xs">{repo.language}</span>
+            </div>
+            <p className="text-xs text-muted mt-0.5">
+              Branch: <code className="text-main font-mono">main</code> &bull; Webhook: <span style={{ color: "var(--pass-color)" }}>Active</span>
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="badge badge-passed"><ShieldCheckIcon size={14} className="mr-1" />Branch Protection Active</span>
+          <a href={`https://github.com/example/${repo.name}`} target="_blank" rel="noreferrer">
+            <Button variant="secondary" size="sm" icon={<GitHubIcon size={14} />}>Open in GitHub ↗</Button>
+          </a>
+        </div>
+      </div>
+
+      <div className="stat-grid">
+        <MetricCard label="Security Score" value={repo.security_score} suffix="/ 100" severity={repo.security_score >= 85 ? "passed" : "medium"} subtitle="Continuous gate posture" />
+        <MetricCard label="PRs Audited" value={repo.pr_count || 42} subtitle="All PR checks resolved" />
+        <MetricCard label="Open Vulnerabilities" value={repo.open_findings_count} severity={repo.open_findings_count > 0 ? "critical" : "passed"} subtitle="Require developer fix" />
+        <MetricCard label="Mean Time to Fix" value="3.4 hrs" trend="-25%" trendDirection="down" trendPositive={true} subtitle="Faster than team SLA" />
+      </div>
+
+      <Card title="Pull Request Audit History" description="Automated security assessments for incoming code branches">
+        <DataTable columns={prColumns} data={prs} keyExtractor={(p) => p.id} emptyMessage="No PR audits recorded for this repository." />
+      </Card>
+
+      {findings.length > 0 && (
+        <div>
+          <h2 className="text-sm font-bold text-main mb-3">Active Repository Vulnerabilities ({findings.length})</h2>
+          <div className="flex flex-col gap-3">
+            {findings.map((f) => <SecurityFindingCard key={f.id} finding={f} />)}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

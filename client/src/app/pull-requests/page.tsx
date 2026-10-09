@@ -4,16 +4,20 @@ import React, { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { PullRequest } from "@/types";
 import { fetchPullRequests } from "@/lib/api";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { GateBadge } from "@/components/ui/Badge";
+import { DataTable, Column } from "@/components/ui/DataTable";
+import { Button } from "@/components/ui/Button";
 
 export default function PullRequestsPage() {
   const [prs, setPrs] = useState<PullRequest[]>([]);
   const [filterGate, setFilterGate] = useState<string>("ALL");
   const [repoFilter, setRepoFilter] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    fetchPullRequests().then(setPrs);
+    fetchPullRequests().then(setPrs).finally(() => setLoading(false));
   }, []);
 
   const repos = useMemo(() => Array.from(new Set(prs.map((p) => p.repository))), [prs]);
@@ -29,125 +33,107 @@ export default function PullRequestsPage() {
     });
   }, [prs, filterGate, repoFilter, searchQuery]);
 
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-white tracking-tight">Pull Requests</h1>
-        <p className="text-xs text-slate-400 mt-1">
-          Automated security reviews and gate enforcement triggered by GitHub webhooks.
-        </p>
-      </div>
+  const columns: Column<PullRequest>[] = [
+    {
+      key: "title",
+      header: "Pull Request",
+      render: (pr) => (
+        <Link href={`/pull-requests/${pr.pr_number}`} className="font-medium hover:underline flex items-center gap-1.5" style={{ color: "var(--text-main)" }}>
+          <span className="font-mono text-xs" style={{ color: "var(--accent)" }}>#{pr.pr_number}</span>
+          <span>{pr.title}</span>
+        </Link>
+      ),
+    },
+    {
+      key: "repository",
+      header: "Repository",
+      render: (pr) => <span className="font-mono text-xs text-muted">{pr.repository}</span>,
+    },
+    {
+      key: "author",
+      header: "Author",
+      render: (pr) => <span className="text-xs text-muted">{pr.author}</span>,
+    },
+    {
+      key: "security_score",
+      header: "Score",
+      render: (pr) => (
+        <div className="flex items-center gap-1 font-mono text-xs">
+          <span className="font-bold" style={{ color: pr.security_score >= 85 ? "var(--pass-color)" : pr.security_score >= 70 ? "var(--med-color)" : "var(--crit-color)" }}>
+            {pr.security_score}
+          </span>
+          <span className="text-[11px] text-dim">/ 100</span>
+        </div>
+      ),
+    },
+    {
+      key: "findings",
+      header: "Findings",
+      render: (pr) => (
+        <div className="flex items-center gap-2 text-xs font-mono">
+          {pr.findings_summary.critical > 0 && <span style={{ color: "var(--crit-color)" }} className="font-bold">🔴 {pr.findings_summary.critical}</span>}
+          {pr.findings_summary.high > 0 && <span style={{ color: "var(--high-color)" }} className="font-semibold">🟠 {pr.findings_summary.high}</span>}
+          {pr.findings_summary.medium > 0 && <span style={{ color: "var(--med-color)" }}>🟡 {pr.findings_summary.medium}</span>}
+          {pr.findings_summary.critical === 0 && pr.findings_summary.high === 0 && pr.findings_summary.medium === 0 && (
+            <span style={{ color: "var(--pass-color)" }}>🟢 Clean</span>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: "gate_status",
+      header: "Gate Status",
+      render: (pr) => <GateBadge status={pr.gate_status} />,
+    },
+    {
+      key: "actions",
+      header: "",
+      align: "right",
+      render: (pr) => (
+        <Link href={`/pull-requests/${pr.pr_number}`}>
+          <Button variant="ghost" size="sm">Review Audit →</Button>
+        </Link>
+      ),
+    },
+  ];
 
-      {/* Filter Toolbar */}
-      <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl flex flex-wrap items-center justify-between gap-4">
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-lg border border-slate-800">
+  return (
+    <div className="space-y">
+      <PageHeader
+        title="Pull Requests"
+        subtitle="Automated security reviews and gate enforcement triggered by GitHub webhooks."
+      />
+      <div className="filter-bar flex-between">
+        <div className="flex items-center gap-2.5 flex-wrap">
+          <div className="flex items-center gap-1">
             {["ALL", "BLOCKED", "PASSED"].map((g) => (
-              <button
-                key={g}
-                onClick={() => setFilterGate(g)}
-                className={`px-3 py-1 text-xs font-semibold rounded transition ${
-                  filterGate === g ? "bg-slate-800 text-sky-400 shadow-sm" : "text-slate-400 hover:text-slate-200"
-                }`}
-              >
+              <Button key={g} variant={filterGate === g ? "primary" : "secondary"} size="sm" onClick={() => setFilterGate(g)}>
                 {g}
-              </button>
+              </Button>
             ))}
           </div>
-
-          <select
-            value={repoFilter}
-            onChange={(e) => setRepoFilter(e.target.value)}
-            className="bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-300 focus:outline-none"
-          >
+          <select value={repoFilter} onChange={(e) => setRepoFilter(e.target.value)} className="form-input">
             <option value="ALL">All Repositories</option>
-            {repos.map((r) => (
-              <option key={r} value={r}>{r}</option>
-            ))}
+            {repos.map((r) => <option key={r} value={r}>{r}</option>)}
           </select>
-
           <input
             type="text"
             placeholder="Search PR title or #number..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 w-60 focus:outline-none focus:border-sky-500"
+            className="form-input"
+            style={{ width: "220px" }}
           />
         </div>
-        <span className="text-xs text-slate-400">Showing {filtered.length} pull requests</span>
+        <span className="text-xs text-dim">Showing {filtered.length} pull requests</span>
       </div>
-
-      {/* PR Table */}
-      <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-slate-950/70 text-slate-400 text-xs uppercase border-b border-slate-800">
-              <tr>
-                <th className="py-3.5 px-4 font-semibold">PR</th>
-                <th className="py-3.5 px-4 font-semibold">Repository</th>
-                <th className="py-3.5 px-4 font-semibold">Author</th>
-                <th className="py-3.5 px-4 font-semibold">Security Score</th>
-                <th className="py-3.5 px-4 font-semibold">Findings</th>
-                <th className="py-3.5 px-4 font-semibold">Gate Status</th>
-                <th className="py-3.5 px-4 font-semibold text-right">Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-800/80">
-              {filtered.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="text-center py-12 text-slate-400 text-xs">
-                    No pull requests match the selected filters.
-                  </td>
-                </tr>
-              ) : (
-                filtered.map((pr) => (
-                  <tr key={pr.id} className="hover:bg-slate-850/50 transition">
-                    <td className="py-3.5 px-4">
-                      <Link href={`/pull-requests/${pr.pr_number}`} className="font-medium text-slate-100 hover:text-sky-400 block">
-                        <span className="font-mono text-sky-400 mr-1.5">#{pr.pr_number}</span>
-                        {pr.title}
-                      </Link>
-                    </td>
-                    <td className="py-3.5 px-4 font-mono text-xs text-slate-300">{pr.repository}</td>
-                    <td className="py-3.5 px-4 text-xs text-slate-400">{pr.author}</td>
-                    <td className="py-3.5 px-4">
-                      <span className={`font-bold text-xs ${pr.security_score < 75 ? "text-rose-400" : "text-emerald-400"}`}>
-                        {pr.security_score}
-                      </span>
-                      <span className="text-xs text-slate-500"> / 100</span>
-                    </td>
-                    <td className="py-3.5 px-4 text-xs font-mono">
-                      {pr.findings_summary.critical > 0 && (
-                        <span className="text-rose-400 font-bold mr-2">🔴 {pr.findings_summary.critical}</span>
-                      )}
-                      {pr.findings_summary.high > 0 && (
-                        <span className="text-orange-400 mr-2">🟠 {pr.findings_summary.high}</span>
-                      )}
-                      {pr.findings_summary.medium > 0 && (
-                        <span className="text-amber-400 mr-2">🟡 {pr.findings_summary.medium}</span>
-                      )}
-                      {pr.findings_summary.critical === 0 && pr.findings_summary.high === 0 && (
-                        <span className="text-emerald-400">🟢 Clean</span>
-                      )}
-                    </td>
-                    <td className="py-3.5 px-4">
-                      <GateBadge status={pr.gate_status} />
-                    </td>
-                    <td className="py-3.5 px-4 text-right">
-                      <Link
-                        href={`/pull-requests/${pr.pr_number}`}
-                        className="px-2.5 py-1 text-xs font-medium rounded-md bg-slate-800 hover:bg-slate-700 text-sky-400 border border-slate-700 transition"
-                      >
-                        Review Audit →
-                      </Link>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <DataTable
+        columns={columns}
+        data={filtered}
+        keyExtractor={(pr) => pr.id}
+        loading={loading}
+        emptyMessage="No pull requests match the selected filters."
+      />
     </div>
   );
 }

@@ -42,6 +42,7 @@ class SearchResponse(BaseModel):
 
 class IndexRequest(BaseModel):
     corpus_url: Optional[str] = None
+    max_documents: Optional[int] = None
 
 
 class IndexStatusResponse(BaseModel):
