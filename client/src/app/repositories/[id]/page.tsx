@@ -6,7 +6,7 @@ import { useParams } from "next/navigation";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Repository, PullRequest, Finding } from "@/types";
 import { fetchRepositoryById, fetchPullRequests, fetchFindings } from "@/lib/api";
-import { ArrowLeftIcon, RepoIcon, ShieldCheckIcon } from "@/components/ui/Icons";
+import { ArrowLeftIcon, RepoIcon, ShieldCheckIcon, GitHubIcon } from "@/components/ui/Icons";
 import { GateBadge, SeverityBadge } from "@/components/ui/Badge";
 
 export default function RepositoryDetailPage() {
@@ -64,11 +64,20 @@ export default function RepositoryDetailPage() {
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="px-3 py-1 rounded-lg text-xs font-semibold bg-emerald-950/60 text-emerald-400 border border-emerald-800 flex items-center gap-1.5">
+            <div className="flex items-center gap-2.5">
+              <span className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-950/60 text-emerald-400 border border-emerald-800 flex items-center gap-1.5">
                 <ShieldCheckIcon className="w-4 h-4" />
                 Branch Protection Active
               </span>
+              <a
+                href={`https://github.com/example/${repo.name}`}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-semibold text-xs transition"
+              >
+                <GitHubIcon className="w-3.5 h-3.5" />
+                Open in GitHub ↗
+              </a>
             </div>
           </div>
         </div>

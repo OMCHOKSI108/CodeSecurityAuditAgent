@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useMemo } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { Finding, Severity } from "@/types";
+import { Finding } from "@/types";
 import { fetchFindings } from "@/lib/api";
 import { FindingsTable } from "@/components/findings/FindingsTable";
 
@@ -13,7 +13,7 @@ export default function FindingsPage() {
   const [search, setSearch] = useState("");
 
   useEffect(() => {
-    fetchFindings().then((data) => setFindings(data));
+    fetchFindings().then(setFindings);
   }, []);
 
   const filtered = useMemo(() => {
@@ -34,32 +34,28 @@ export default function FindingsPage() {
         <div>
           <h1 className="text-2xl font-bold text-white tracking-tight">Security Findings</h1>
           <p className="text-xs text-slate-400 mt-1">
-            Centralized vulnerability ledger across all monitored repositories.
+            23 open findings detected across your repositories.
           </p>
         </div>
 
-        {/* Metric summary pills */}
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-          <div className="bg-slate-900 border border-slate-800 p-3 rounded-lg text-center">
-            <span className="text-xs text-slate-400 block">Total Active</span>
-            <span className="text-xl font-bold text-slate-100">23</span>
+        {/* Action Callout: UX Principle */}
+        <div className="bg-rose-950/25 border border-rose-900/60 rounded-xl p-4 flex flex-wrap items-center justify-between gap-4">
+          <div className="space-y-0.5">
+            <div className="flex items-center gap-3 text-xs font-semibold">
+              <span className="text-rose-400 font-bold">🔴 2 Critical</span>
+              <span className="text-orange-400 font-bold">🟠 8 High</span>
+              <span className="text-slate-400">&bull; 13 Medium/Low</span>
+            </div>
+            <p className="text-xs text-slate-300">
+              The 2 critical findings are currently blocking <strong>3 Pull Requests</strong> from merging into production.
+            </p>
           </div>
-          <div className="bg-slate-900 border border-rose-900/40 p-3 rounded-lg text-center">
-            <span className="text-xs text-rose-400 block">Critical</span>
-            <span className="text-xl font-bold text-rose-400">2</span>
-          </div>
-          <div className="bg-slate-900 border border-orange-900/40 p-3 rounded-lg text-center">
-            <span className="text-xs text-orange-400 block">High</span>
-            <span className="text-xl font-bold text-orange-400">7</span>
-          </div>
-          <div className="bg-slate-900 border border-amber-900/40 p-3 rounded-lg text-center">
-            <span className="text-xs text-amber-400 block">Medium</span>
-            <span className="text-xl font-bold text-amber-400">14</span>
-          </div>
-          <div className="bg-slate-900 border border-emerald-900/40 p-3 rounded-lg text-center">
-            <span className="text-xs text-emerald-400 block">Resolved (30d)</span>
-            <span className="text-xl font-bold text-emerald-400">167</span>
-          </div>
+          <button
+            onClick={() => setSelectedSeverity("critical")}
+            className="px-3.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-semibold text-xs transition shadow-sm"
+          >
+            Filter Critical Findings
+          </button>
         </div>
 
         {/* Filter bar */}

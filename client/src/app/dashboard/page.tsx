@@ -17,118 +17,109 @@ export default function DashboardPage() {
   }, []);
 
   return (
-    <div>
-      <div className="page-header">
-        <h1 className="page-title">Good morning, Acme Engineering</h1>
-        <p className="page-subtitle">Here's the current security posture across your repositories.</p>
+    <div className="space-y-6">
+      {/* Page Header */}
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-white tracking-tight">Security Posture Dashboard</h1>
+          <p className="text-xs text-slate-400 mt-1">Real-time Pull Request risk assessment across Acme Engineering.</p>
+        </div>
+        <Link
+          href="/pull-requests"
+          className="px-3.5 py-2 rounded-lg bg-sky-500 hover:bg-sky-400 text-slate-950 font-semibold text-xs transition"
+        >
+          View All Pull Requests →
+        </Link>
       </div>
 
-      <div className="stat-grid">
-        <div className="stat-card">
-          <div className="stat-label">Security Score</div>
-          <div className="stat-value">87<span style={{ fontSize: "1rem", color: "var(--text-dim)" }}>/100</span></div>
-          <div className="stat-trend trend-up">↑ 4% from last period</div>
-        </div>
-
-        <div className="stat-card">
-          <div className="stat-label">Open Findings</div>
-          <div className="stat-value">23</div>
-          <div className="stat-trend trend-up">↓ 12% from last period</div>
-        </div>
-
-        <div className="stat-card">
-          <div className="stat-label">Critical Issues</div>
-          <div className="stat-value" style={{ color: "var(--crit-color)" }}>2</div>
-          <div className="stat-trend" style={{ color: "var(--text-dim)" }}>Blocking active merges</div>
-        </div>
-
-        <div className="stat-card">
-          <div className="stat-label">PRs Blocked</div>
-          <div className="stat-value" style={{ color: "var(--blocked-color)" }}>3</div>
-          <div className="stat-trend" style={{ color: "var(--text-dim)" }}>Enforced by security gate</div>
-        </div>
-      </div>
-
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem", marginBottom: "1.5rem" }}>
-        <div className="card" style={{ marginBottom: 0 }}>
-          <h3 style={{ fontSize: "1rem", marginBottom: "1rem" }}>SECURITY POSTURE</h3>
-          <div style={{ display: "flex", alignItems: "baseline", gap: "1rem", marginBottom: "0.5rem" }}>
-            <span style={{ fontSize: "2.5rem", fontWeight: 800, color: "var(--accent)" }}>87</span>
-            <span style={{ color: "var(--text-muted)", fontSize: "0.875rem" }}>Previous: 83/100 (↑ 4% trend)</span>
+      {/* Immediate Attention Callout: What to know + What to do next */}
+      <div className="bg-rose-950/30 border border-rose-900/60 rounded-xl p-5 flex flex-wrap items-center justify-between gap-4">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold text-rose-400 uppercase tracking-wide">⚠️ Action Required</span>
+            <span className="text-slate-400 text-xs">&bull; 23 open findings</span>
           </div>
-          <p style={{ fontSize: "0.875rem", color: "var(--text-muted)", marginBottom: "1rem" }}>
-            Posture reflects automated OWASP vulnerability scans across 24 connected repositories. 2 Critical findings currently block merging.
+          <p className="text-sm text-slate-200 font-medium">
+            <strong className="text-rose-400">2 Critical findings</strong> are currently blocking <strong className="text-rose-400">3 Pull Requests</strong> in <code className="font-mono text-xs text-rose-300">payment-api</code>.
           </p>
-          <div style={{ height: "8px", background: "var(--border-subtle)", borderRadius: "4px", overflow: "hidden", display: "flex" }}>
-            <div style={{ width: "87%", background: "var(--accent)" }} />
-          </div>
         </div>
-
-        <div className="card" style={{ marginBottom: 0 }}>
-          <h3 style={{ fontSize: "1rem", marginBottom: "1rem" }}>FINDINGS BY SEVERITY</h3>
-          <div style={{ display: "flex", gap: "0.5rem", height: "12px", borderRadius: "6px", overflow: "hidden", marginBottom: "1rem" }}>
-            <div style={{ width: "10%", background: "var(--crit-color)" }} title="Critical: 2" />
-            <div style={{ width: "35%", background: "var(--high-color)" }} title="High: 8" />
-            <div style={{ width: "40%", background: "var(--med-color)" }} title="Medium: 9" />
-            <div style={{ width: "15%", background: "var(--low-color)" }} title="Low: 4" />
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "0.5rem", textAlign: "center" }}>
-            <div style={{ padding: "0.5rem", background: "var(--bg-surface-elevated)", borderRadius: "6px" }}>
-              <div style={{ color: "var(--crit-color)", fontWeight: 700 }}>2</div>
-              <div style={{ fontSize: "0.75rem", color: "var(--text-dim)" }}>Critical</div>
-            </div>
-            <div style={{ padding: "0.5rem", background: "var(--bg-surface-elevated)", borderRadius: "6px" }}>
-              <div style={{ color: "var(--high-color)", fontWeight: 700 }}>8</div>
-              <div style={{ fontSize: "0.75rem", color: "var(--text-dim)" }}>High</div>
-            </div>
-            <div style={{ padding: "0.5rem", background: "var(--bg-surface-elevated)", borderRadius: "6px" }}>
-              <div style={{ color: "var(--med-color)", fontWeight: 700 }}>9</div>
-              <div style={{ fontSize: "0.75rem", color: "var(--text-dim)" }}>Medium</div>
-            </div>
-            <div style={{ padding: "0.5rem", background: "var(--bg-surface-elevated)", borderRadius: "6px" }}>
-              <div style={{ color: "var(--low-color)", fontWeight: 700 }}>4</div>
-              <div style={{ fontSize: "0.75rem", color: "var(--text-dim)" }}>Low</div>
-            </div>
-          </div>
+        <div className="flex items-center gap-2.5">
+          <Link
+            href="/findings?severity=critical"
+            className="px-4 py-2 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-semibold text-xs transition shadow-sm"
+          >
+            Review Critical Findings →
+          </Link>
+          <Link
+            href="/pull-requests"
+            className="px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-medium transition"
+          >
+            View Blocked PRs (3)
+          </Link>
         </div>
       </div>
 
-      <div className="card">
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
-          <h3 style={{ fontSize: "1rem" }}>REPOSITORY SECURITY</h3>
-          <Link href="/repositories" style={{ fontSize: "0.8rem", color: "var(--accent)" }}>View all 24 repos →</Link>
+      {/* 4 Core Metrics */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl">
+          <span className="text-xs text-slate-400 block">Security Score</span>
+          <div className="flex items-baseline gap-1 mt-1">
+            <span className="text-2xl font-bold text-slate-100">87</span>
+            <span className="text-xs text-slate-500">/ 100</span>
+          </div>
+          <span className="text-[11px] text-emerald-400 block mt-1">↑ +4% from last period</span>
         </div>
-        <div className="data-table-container">
-          <table className="data-table">
-            <thead>
+
+        <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl">
+          <span className="text-xs text-slate-400 block">Open Findings</span>
+          <div className="text-2xl font-bold text-slate-100 mt-1">23</div>
+          <span className="text-[11px] text-emerald-400 block mt-1">↓ 12% reduction</span>
+        </div>
+
+        <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl">
+          <span className="text-xs text-slate-400 block">Critical Issues</span>
+          <div className="text-2xl font-bold text-rose-400 mt-1">2</div>
+          <span className="text-[11px] text-rose-400 block mt-1">🔴 Blocking merges</span>
+        </div>
+
+        <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl">
+          <span className="text-xs text-slate-400 block">PRs Blocked</span>
+          <div className="text-2xl font-bold text-rose-400 mt-1">3</div>
+          <span className="text-[11px] text-slate-400 block mt-1">Strict policy gate</span>
+        </div>
+      </div>
+
+      {/* Repository Security Table */}
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-sm font-semibold text-slate-200">Monitored Repositories</h2>
+          <Link href="/repositories" className="text-xs text-sky-400 hover:underline">View all repos →</Link>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead className="text-xs uppercase text-slate-400 border-b border-slate-800">
               <tr>
-                <th>Repository</th>
-                <th>Security Score</th>
-                <th>Critical</th>
-                <th>High</th>
-                <th>Medium</th>
-                <th>Last Scan</th>
-                <th>Status</th>
+                <th className="pb-3 font-semibold">Repository</th>
+                <th className="pb-3 font-semibold">Score</th>
+                <th className="pb-3 font-semibold">Critical</th>
+                <th className="pb-3 font-semibold">High</th>
+                <th className="pb-3 font-semibold">Medium</th>
+                <th className="pb-3 font-semibold">Last Scan</th>
+                <th className="pb-3 font-semibold">Status</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-slate-800/80">
               {repos.map((r) => (
-                <tr key={r.id}>
-                  <td style={{ fontWeight: 600, color: "var(--text-main)" }}>
-                    <Link href={`/repositories/${r.id}`}>{r.name}</Link>
+                <tr key={r.id} className="hover:bg-slate-850/50">
+                  <td className="py-3 font-medium text-slate-100">
+                    <Link href={`/repositories/${r.name}`} className="hover:text-sky-400">{r.name}</Link>
                   </td>
-                  <td>
-                    <span style={{ fontWeight: 700, color: r.security_score < 75 ? "var(--crit-color)" : "var(--pass-color)" }}>
-                      {r.security_score}/100
-                    </span>
-                  </td>
-                  <td style={{ color: r.critical_count > 0 ? "var(--crit-color)" : "inherit", fontWeight: r.critical_count > 0 ? 700 : 400 }}>
-                    {r.critical_count}
-                  </td>
-                  <td>{r.high_count}</td>
-                  <td>{r.medium_count}</td>
-                  <td style={{ fontSize: "0.8rem", color: "var(--text-dim)" }}>{r.last_scan}</td>
-                  <td><StatusBadge status={r.status} /></td>
+                  <td className="py-3 font-semibold text-xs text-sky-400">{r.security_score}/100</td>
+                  <td className="py-3 font-semibold text-xs text-rose-400">{r.critical_count}</td>
+                  <td className="py-3 font-semibold text-xs text-orange-400">{r.high_count}</td>
+                  <td className="py-3 text-xs text-slate-300">{r.medium_count}</td>
+                  <td className="py-3 text-xs text-slate-400">{r.last_scan}</td>
+                  <td className="py-3"><StatusBadge status={r.status} /></td>
                 </tr>
               ))}
             </tbody>
@@ -136,6 +127,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
+      {/* Recent PR Stream */}
       <RecentPRsTable prs={prs} />
     </div>
   );

@@ -70,7 +70,7 @@ export function FindingsTable({ findings }: Props) {
                     href={`/findings/${f.id}`}
                     className="px-2.5 py-1 text-xs font-medium rounded-md bg-slate-800 hover:bg-slate-700 text-sky-400 border border-slate-700 transition"
                   >
-                    View Details →
+                    Review Finding →
                   </Link>
                 </td>
               </tr>
