@@ -26,6 +26,11 @@ class Settings(BaseSettings):
     embedding_dim: int = Field(default=1536, alias="EMBEDDING_DIM")
     embedding_timeout: float = Field(default=30.0, alias="EMBEDDING_TIMEOUT")
     embedding_batch_size: int = Field(default=64, alias="EMBEDDING_BATCH_SIZE")
+    # NVIDIA NIM's asymmetric embedding models (e.g. nvidia/nv-embedqa-e5-v5)
+    # require an input_type field (query vs passage) to embed correctly.
+    # Off by default: an unknown extra field isn't guaranteed safe to send to
+    # every OpenAI-compatible provider (OpenAI itself, Jina, etc.).
+    embedding_send_input_type: bool = Field(default=False, alias="EMBEDDING_SEND_INPUT_TYPE")
 
     rag_corpus_version: str = Field(default="v1", alias="RAG_CORPUS_VERSION")
     rag_collection_name: str = Field(default="secure_guidance_v1", alias="RAG_COLLECTION_NAME")

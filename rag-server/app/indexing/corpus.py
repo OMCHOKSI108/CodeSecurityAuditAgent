@@ -4,7 +4,7 @@ import gzip
 import json
 import logging
 import uuid
-from typing import Any
+from typing import Any, Optional
 
 import httpx
 
@@ -32,7 +32,13 @@ def load_corpus_from_url(url: str) -> list[dict[str, Any]]:
     return chunks
 
 
-def index_chunks(qdrant_store, embedding_mgr, chunks: list[dict[str, Any]], batch_size: int = 64) -> int:
+def index_chunks(
+    qdrant_store,
+    embedding_mgr,
+    chunks: list[dict[str, Any]],
+    batch_size: int = 64,
+    input_type: Optional[str] = None,
+) -> int:
     try:
         from qdrant_client.http import models
     except ImportError:
@@ -49,7 +55,7 @@ def index_chunks(qdrant_store, embedding_mgr, chunks: list[dict[str, Any]], batc
     for i in range(0, len(chunks), batch_size):
         batch = chunks[i : i + batch_size]
         texts = [b.get("content", "") or b.get("text", "") for b in batch]
-        vectors = embedding_mgr.encode(texts)
+        vectors = embedding_mgr.encode(texts, input_type=input_type)
 
         # The embedding dimension is only known after the provider responds.
         # Create/validate the collection on the first batch so the configured

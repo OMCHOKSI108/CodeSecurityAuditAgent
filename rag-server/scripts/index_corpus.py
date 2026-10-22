@@ -60,7 +60,10 @@ def main() -> int:
             api_key=settings.qdrant_api_key,
         )
         batch_size = args.batch_size or settings.embedding_batch_size
-        count = index_chunks(qdrant, embed, chunks, batch_size=batch_size)
+        count = index_chunks(
+            qdrant, embed, chunks, batch_size=batch_size,
+            input_type="passage" if settings.embedding_send_input_type else None,
+        )
         logger.info("Indexed %s chunks into %s", count, settings.rag_collection_name)
         return 0
     except EmbeddingNotConfigured as exc:

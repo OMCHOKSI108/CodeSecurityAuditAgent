@@ -98,7 +98,12 @@ class Settings(BaseSettings):
 
     @property
     def github_oauth_redirect_uri(self) -> str:
-        return self.oauth_redirect_uri or f"{self.main_server_url.rstrip('/')}/v1/auth/github/callback"
+        # Falls back to the CLIENT's public URL + its proxy prefix (/api/* ->
+        # /v1/* via client/src/lib/proxy.ts), not main_server_url directly -
+        # the session cookie must land on the client origin the browser
+        # actually talks to, or the browser never sends it back (see
+        # proxy.ts's own comment on this exact requirement).
+        return self.oauth_redirect_uri or f"{self.next_public_app_url.rstrip('/')}/api/auth/github/callback"
 
 
 @lru_cache

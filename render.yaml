@@ -1,9 +1,13 @@
-# Render Blueprint for the CodeSecurityAuditAgent stack.
-#
-# main-server and rag-server deploy as native Render "python" services (pip
-# install + a start command - no Dockerfile/image build), per request. The
-# client deploys separately on Vercel (see client/.env.example); the
-# "codesec-client" block below is kept only as an optional Render alternative.
+# Render Blueprint for the CodeSecurityAuditAgent stack - one Blueprint
+# deploys all four pieces together: codesec-client (frontend), codesec-main
+# (backend + review worker), codesec-rag (RAG microservice), plus Postgres
+# and Redis. main-server and rag-server deploy as native Render "python"
+# services (pip install + a start command - no Dockerfile/image build);
+# codesec-client still builds from its Dockerfile. NEXT_PUBLIC_APP_URL and
+# RAG_SERVICE_URL/MAIN_SERVER_URL are wired automatically via fromService -
+# Render resolves these across services in one Blueprint apply, no manual
+# URL copying between dashboards. (client/.env.example still documents a
+# Vercel deploy as an alternative, if you'd rather split it off later.)
 #
 # This layout targets Render's free/entry plans:
 #   * The review worker runs inside the main-server process because free plans
@@ -49,12 +53,18 @@ services:
           property: hostport
       - key: RAG_SERVICE_TOKEN
         sync: false
-      # Public URL of the client deployment (Vercel), e.g.
-      # https://codesec-client.vercel.app
+      # Public URL of codesec-client, resolved automatically within this
+      # Blueprint - app/core/config.py's _ensure_public_scheme validator
+      # adds https:// to the bare hostport Render returns here.
       - key: NEXT_PUBLIC_APP_URL
-        sync: false
-      # Must point at the client origin so the session cookie is set there:
-      # https://codesec-client.vercel.app/api/auth/github/callback
+        fromService:
+          name: codesec-client
+          type: web
+          property: hostport
+      # Leave unset to auto-derive from NEXT_PUBLIC_APP_URL + /api/auth/github/callback
+      # (app/core/config.py:github_oauth_redirect_uri) - the client's proxy
+      # route, so the session cookie lands on the client origin. Only set
+      # this explicitly if the client ever moves off this Blueprint (e.g. Vercel).
       - key: OAUTH_REDIRECT_URI
         sync: false
       - key: RUN_WORKER_INLINE
@@ -117,23 +127,25 @@ services:
         sync: false
       - key: QDRANT_API_KEY
         sync: false
-      # Any OpenAI-compatible /embeddings API. Hugging Face's router also
-      # works here (https://router.huggingface.co/v1 + HUGGINGFACE_API_KEY)
-      # if you'd rather keep one provider for both embeddings and fallback LLM.
+      # Any OpenAI-compatible /embeddings API. Using NVIDIA NIM here since you
+      # already have NVIDIA_NIM_API_KEY for the pr_agent fallback chain - this
+      # is a separate call path (rag-server, not main-server), same key works.
+      # EMBEDDING_SEND_INPUT_TYPE=true is required for this specific model;
+      # it's an asymmetric query/passage embedder, not a plain OpenAI one.
       - key: EMBEDDING_API_BASE
-        value: https://api.openai.com/v1
+        value: https://integrate.api.nvidia.com/v1
       - key: EMBEDDING_API_KEY
         sync: false
       - key: EMBEDDING_MODEL
-        value: text-embedding-3-small
+        value: nvidia/nv-embedqa-e5-v5
       - key: EMBEDDING_DIM
-        value: "1536"
+        value: "1024"
+      - key: EMBEDDING_SEND_INPUT_TYPE
+        value: "true"
       # Use a fresh collection name whenever the embedding model changes.
       - key: RAG_COLLECTION_NAME
         value: secure_guidance_v1
 
-  # Optional Render alternative to deploying the client on Vercel. Not part
-  # of the primary deploy path - see client/.env.example for Vercel instead.
   - type: web
     name: codesec-client
     runtime: docker

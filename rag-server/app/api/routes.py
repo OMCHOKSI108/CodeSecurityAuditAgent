@@ -79,7 +79,8 @@ def search(req: SearchRequest):
     qdrant = _get_qdrant()
 
     try:
-        query_vec = embed.encode([req.query])[0]
+        input_type = "query" if settings.embedding_send_input_type else None
+        query_vec = embed.encode([req.query], input_type=input_type)[0]
         results = qdrant.search(query_vec, top_k=req.top_k, cwe_filter=req.cwe_id)
         return SearchResponse(
             query=req.query,
@@ -118,6 +119,7 @@ def trigger_index(req: IndexRequest):
             embed,
             chunks,
             batch_size=settings.embedding_batch_size,
+            input_type="passage" if settings.embedding_send_input_type else None,
         )
         return {"status": "indexed", "count": indexed}
     except EmbeddingNotConfigured as exc:

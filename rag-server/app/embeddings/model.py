@@ -61,7 +61,7 @@ class EmbeddingClient:
             self._http = httpx.Client(timeout=self.timeout)
         return self._http
 
-    def encode(self, texts: list[str]) -> list[list[float]]:
+    def encode(self, texts: list[str], input_type: Optional[str] = None) -> list[list[float]]:
         if not texts:
             return []
         if not self.is_ready:
@@ -78,6 +78,12 @@ class EmbeddingClient:
         for start in range(0, len(texts), self.batch_size):
             batch = texts[start : start + self.batch_size]
             payload = {"model": self.model_name, "input": batch}
+            if input_type:
+                # NVIDIA NIM's asymmetric embedding models (e.g.
+                # nvidia/nv-embedqa-e5-v5) need this to tell "query" text
+                # apart from "passage" text; a plain OpenAI-compatible
+                # provider ignores an extra field it doesn't recognize.
+                payload["input_type"] = input_type
             try:
                 response = self._client().post(self.endpoint, json=payload, headers=headers)
             except httpx.HTTPError as exc:
