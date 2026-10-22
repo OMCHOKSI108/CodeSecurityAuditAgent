@@ -21,12 +21,11 @@ CodeSecAudit AI acts like an AI senior engineer inside GitHub pull requests, det
 | Kaggle Notebook | https://www.kaggle.com/code/omchoksi04/codereview |
 | Hugging Face Dataset | https://huggingface.co/datasets/OMCHOKSI108/CodeSecAudit-RAG |
 | RAG Service (live) | https://OMCHOKSI108-codereview-agent.hf.space |
-| GitHub Repo | https://github.com/OMCHOKSI108/codesec-audit-dataset |
+| GitHub Repo | https://github.com/OMCHOKSI108/CodeSecurityAuditAgent |
 | GitHub App | https://github.com/apps/codesecaudit-ai |
-| Website Portal | https://codesec-website.onrender.com |
-| Review UI | https://codesec-review-ui.onrender.com |
-| Dashboard | https://codesec-dashboard.onrender.com |
-| API | https://codesec-api.onrender.com |
+| App (Client) | https://codesec-client.onrender.com |
+| API (main-server) | https://codesec-main.onrender.com |
+| RAG Service | https://codesec-rag.onrender.com |
 
 ---
 
@@ -360,7 +359,7 @@ Current status:
 
 ## Website / SaaS Portal
 
-Public product portal at **[https://codesec-website.onrender.com](https://codesec-website.onrender.com)**
+Public product portal at **[https://codesec-client.onrender.com](https://codesec-client.onrender.com)**
 
 - **Landing page** — Product features, GitHub App install CTA, sign in CTA
 - **GitHub OAuth login** — Sign in with your GitHub account
