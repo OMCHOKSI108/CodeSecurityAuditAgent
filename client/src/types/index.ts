@@ -58,6 +58,8 @@ export interface PullRequest {
 export interface Repository {
   id: string;
   name: string;
+  full_name?: string;
+  github_repo_id?: string;
   language: string;
   security_score: number;
   critical_count: number;
@@ -124,4 +126,35 @@ export interface LogEntry {
   level: string;
   message: string;
   service: string;
+}
+
+export interface ScoreProgression {
+  month: string;
+  score: number;
+}
+
+export interface CWEDistribution {
+  name: string;
+  cwe_id: string;
+  count: number;
+  pct: string;
+  color: string;
+  barBg: string;
+}
+
+export interface GateVerdicts {
+  passed_count: number;
+  passed_pct: number;
+  blocked_count: number;
+  blocked_pct: number;
+}
+
+export interface AnalyticsTrends {
+  security_score: number;
+  critical_active: number;
+  mttr_hours: number;
+  gate_enforcement_pct: number;
+  score_progression: ScoreProgression[];
+  cwe_distribution: CWEDistribution[];
+  gate_verdicts: GateVerdicts;
 }

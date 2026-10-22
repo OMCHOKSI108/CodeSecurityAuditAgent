@@ -6,12 +6,21 @@ import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 
+import { fetchMe } from "@/lib/api";
+
 export default function SettingsPage() {
   const [orgName, setOrgName] = useState("Acme Engineering");
   const [contactEmail, setContactEmail] = useState("security@acme.corp");
   const [emailAlerts, setEmailAlerts] = useState(true);
   const [dailyDigest, setDailyDigest] = useState(true);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    fetchMe().then((user) => {
+      if (user.organization_name) setOrgName(user.organization_name);
+      if (user.email) setContactEmail(user.email);
+    });
+  }, []);
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();

@@ -9,9 +9,13 @@ from app.db.models.audit import AuditEvent
 from app.db.models.review import Finding, Review, ReviewJob
 from app.db.session import get_session_factory
 from app.jobs.queue import dequeue_review_job
+from app.reviews.diff_parser import extract_added_lines, split_diff_by_file
 from app.reviews.engine import scan_source_code
+from app.reviews.pr_agent_client import AI_FINDING_CWE, review_diff_with_pr_agent
 from app.reviews.rag_client import query_rag_guidance
+from app.reviews.report_formatter import format_pr_comment
 from app.reviews.risk import calculate_risk_score, decide_verdict, get_suggested_fix
+from app.security.github_app import fetch_pull_request_diff, post_pr_comment
 
 logger = logging.getLogger("main_server")
 
@@ -24,6 +28,9 @@ async def process_single_job(job_data: dict) -> None:
     commit_sha = job_data.get("commit_sha", "HEAD")
     code_content = job_data.get("code_content", "")
     file_path = job_data.get("file_path", "unknown")
+    is_diff = job_data.get("is_diff", False)
+    repo_full_name = job_data.get("repo_full_name")
+    installation_id = job_data.get("installation_id")
 
     factory = get_session_factory()
     async with factory() as db:
@@ -34,8 +41,43 @@ async def process_single_job(job_data: dict) -> None:
             job.status = "processing"
             await db.commit()
 
+        # 1b. The webhook handler enqueues immediately without fetching the
+        # diff (GitHub expects an ACK within ~10s; a full review can take
+        # much longer). The diff fetch - the slow, network-bound part -
+        # happens here instead, off GitHub's request path entirely.
+        if is_diff and not code_content and repo_full_name and installation_id:
+            try:
+                code_content = await fetch_pull_request_diff(repo_full_name, pr_number, installation_id)
+            except Exception as e:
+                logger.error(f"Failed to fetch PR diff for job {job_id}: {e}")
+                if job:
+                    job.status = "failed"
+                    job.error_message = f"diff fetch failed: {e}"
+                    await db.commit()
+                return
+
         # 2. Run deterministic static scans
-        findings_raw = scan_source_code(code_content, file_path=file_path)
+        if is_diff:
+            findings_raw = []
+            for path, patch in split_diff_by_file(code_content).items():
+                added_text = "\n".join(content for _, content in extract_added_lines(patch))
+                findings_raw.extend(scan_source_code(added_text, file_path=path))
+        else:
+            findings_raw = scan_source_code(code_content, file_path=file_path)
+
+        # 2b. Run the pr_agent LLM review stage (additive, best-effort - see
+        # docs/PR_AGENT_INTEGRATION_GUIDE.md). Only meaningful on real diffs,
+        # and only when an LLM key is configured.
+        settings = get_settings()
+        if is_diff and settings.pr_agent_review_enabled:
+            ai_findings = await review_diff_with_pr_agent(code_content, default_file_path=file_path)
+            existing_keys = {(f["file_path"], f["line_number"], f["title"]) for f in findings_raw}
+            for f in ai_findings:
+                key = (f["file_path"], f["line_number"], f["title"])
+                if key not in existing_keys:
+                    findings_raw.append(f)
+                    existing_keys.add(key)
+
         risk_score = calculate_risk_score(findings_raw)
         verdict = decide_verdict(risk_score)
 
@@ -45,10 +87,22 @@ async def process_single_job(job_data: dict) -> None:
 
         for f in findings_raw:
             cwe = f["cwe_id"]
-            guidance, _, ok = await query_rag_guidance(query=f["title"], cwe_id=cwe)
+            is_ai_finding = cwe == AI_FINDING_CWE
+            # An AI finding has no real CWE to filter the RAG lookup by; let
+            # title-based matching alone decide relevance instead of a cwe_id
+            # that can never match a stored OWASP chunk.
+            guidance, _, ok = await query_rag_guidance(query=f["title"], cwe_id=None if is_ai_finding else cwe)
             if ok:
                 any_rag_success = True
-            fix = get_suggested_fix(cwe, guidance)
+
+            if is_ai_finding:
+                # pr_agent's own explanation carries more signal than the
+                # generic CWE-keyed template in risk.py - use it directly.
+                fix = f.get("explanation") or "Review this AI-flagged issue manually."
+                if guidance:
+                    fix = f"{fix}\nOWASP Guidance: {guidance}"
+            else:
+                fix = get_suggested_fix(cwe, guidance)
 
             findings_to_insert.append({
                 "cwe_id": cwe,
@@ -97,6 +151,16 @@ async def process_single_job(job_data: dict) -> None:
 
         await db.commit()
         logger.info(f"Processed review job {job_id} -> Verdict: {verdict}")
+
+        # 6. Post the formatted result as a PR comment. GitHub's own email
+        # notifications fire for this automatically for anyone watching the
+        # PR - no mail-sending code needed on our side.
+        if repo_full_name and installation_id:
+            try:
+                comment_body = format_pr_comment(verdict, risk_score, findings_to_insert, commit_sha)
+                await post_pr_comment(repo_full_name, pr_number, installation_id, comment_body)
+            except Exception as e:
+                logger.warning(f"Failed to post PR comment for job {job_id}: {e}")
 
 
 async def run_worker_loop() -> None:

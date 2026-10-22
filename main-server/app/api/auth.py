@@ -23,7 +23,7 @@ router = APIRouter(prefix="/v1/auth", tags=["Authentication"])
 @router.get("/github/start")
 async def github_auth_start():
     settings = get_settings()
-    redirect_uri = f"{settings.main_server_url.rstrip('/')}/v1/auth/github/callback"
+    redirect_uri = settings.github_oauth_redirect_uri
     auth_url = await create_oauth_authorization_url(redirect_uri)
     return RedirectResponse(auth_url, status_code=status.HTTP_302_FOUND)
 

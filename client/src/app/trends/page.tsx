@@ -1,12 +1,31 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { TrendsCharts } from "@/components/trends/TrendsCharts";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { MetricCard } from "@/components/ui/MetricCard";
 import { Card } from "@/components/ui/Card";
+import { AnalyticsTrends } from "@/types";
+import { fetchAnalyticsTrends } from "@/lib/api";
 
 export default function TrendsPage() {
+  const [trends, setTrends] = useState<AnalyticsTrends | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchAnalyticsTrends()
+      .then(setTrends)
+      .finally(() => setLoading(false));
+  }, []);
+
+  const secScore = trends?.security_score ?? 100;
+  const criticalCount = trends?.critical_active ?? 0;
+  const passedCount = trends?.gate_verdicts?.passed_count ?? 0;
+  const blockedCount = trends?.gate_verdicts?.blocked_count ?? 0;
+  const passedPct = trends?.gate_verdicts?.passed_pct ?? 100;
+  const blockedPct = trends?.gate_verdicts?.blocked_pct ?? 0;
+  const mttr = trends?.mttr_hours ?? 0;
+
   return (
     <div className="space-y">
       <PageHeader
@@ -18,26 +37,24 @@ export default function TrendsPage() {
       <div className="stat-grid">
         <MetricCard
           label="Security Score"
-          value="87"
-          trend="+17 pts"
+          value={String(secScore)}
+          trend={secScore >= 80 ? "Healthy" : "Needs Review"}
           trendDirection="up"
-          trendPositive={true}
-          subtitle="from 70 in Q3"
+          trendPositive={secScore >= 80}
+          subtitle="across monitored repositories"
         />
 
         <MetricCard
-          label="Critical Reduction"
-          value="2 Active"
-          trend="↓ 42%"
-          trendDirection="down"
-          trendPositive={true}
-          subtitle="vs 8 previous quarter"
+          label="Critical Active"
+          value={`${criticalCount} Active`}
+          severity={criticalCount > 0 ? "critical" : "passed"}
+          subtitle={criticalCount > 0 ? "Requires remediation" : "Clean branch posture"}
         />
 
         <MetricCard
           label="Critical MTTR"
-          value="3.2 hrs"
-          trend="-58%"
+          value={`${mttr} hrs`}
+          trend="Automated"
           trendDirection="down"
           trendPositive={true}
           subtitle="mean time to remediate"
@@ -45,19 +62,19 @@ export default function TrendsPage() {
 
         <MetricCard
           label="Gate Enforcement"
-          value="98.4%"
-          severity="passed"
-          subtitle="474 / 482 PRs gated safely"
+          value={`${passedPct}%`}
+          severity={passedPct >= 80 ? "passed" : "warning"}
+          subtitle={`${passedCount} / ${passedCount + blockedCount} reviews passed`}
         />
       </div>
 
       {/* Visual Charts */}
-      <TrendsCharts />
+      <TrendsCharts trends={trends} />
 
       {/* PR Gate Verdict Distribution & Top Remediated CWEs */}
       <div className="grid-2">
         <Card
-          title="Pull Request Gate Verdicts (30 Days)"
+          title="Pull Request Gate Verdicts (Active Tenant)"
           description="Distribution of PR verdicts enforced by automated policy gates"
         >
           <div className="grid-2 mb-3">
@@ -72,10 +89,10 @@ export default function TrendsPage() {
                 className="text-xs font-semibold block"
                 style={{ color: "var(--pass-color)" }}
               >
-                Passed &amp; Merged
+                Passed &amp; Approved
               </span>
               <span className="text-xl font-bold font-mono text-main mt-1 block">
-                396 (82.1%)
+                {passedCount} ({passedPct}%)
               </span>
             </div>
 
@@ -93,46 +110,46 @@ export default function TrendsPage() {
                 Blocked by Policy
               </span>
               <span className="text-xl font-bold font-mono text-main mt-1 block">
-                86 (17.9%)
+                {blockedCount} ({blockedPct}%)
               </span>
             </div>
           </div>
 
           <p className="text-xs text-muted leading-relaxed">
             Every blocked pull request required developer remediation or
-            security lead sign-off before merging, preventing 86 potential CVE
-            vulnerabilities from reaching production branches.
+            security lead sign-off before merging, preventing {blockedCount} high-risk code changes from reaching production branches.
           </p>
         </Card>
 
         <Card
-          title="Top Remediated CWEs This Quarter"
-          description="High-frequency vulnerability types resolved before release"
+          title="Detected CWEs in Database"
+          description="High-frequency vulnerability types resolved or identified"
         >
           <div className="flex flex-col gap-2">
-            {[
-              { cwe: "CWE-89: SQL Injection", count: "38 resolved" },
-              { cwe: "CWE-798: Hardcoded Credentials", count: "27 resolved" },
-              { cwe: "CWE-78: OS Command Injection", count: "19 resolved" },
-              { cwe: "CWE-918: Server-Side Request Forgery", count: "14 resolved" },
-            ].map((item) => (
-              <div
-                key={item.cwe}
-                className="flex-between p-2.5 rounded border text-xs"
-                style={{
-                  backgroundColor: "var(--bg-surface-elevated)",
-                  borderColor: "var(--border-subtle)",
-                }}
-              >
-                <span className="font-mono text-main">{item.cwe}</span>
-                <span
-                  className="font-medium"
-                  style={{ color: "var(--pass-color)" }}
+            {trends?.cwe_distribution && trends.cwe_distribution.length > 0 ? (
+              trends.cwe_distribution.map((item) => (
+                <div
+                  key={item.cwe_id}
+                  className="flex-between p-2.5 rounded border text-xs"
+                  style={{
+                    backgroundColor: "var(--bg-surface-elevated)",
+                    borderColor: "var(--border-subtle)",
+                  }}
                 >
-                  {item.count}
-                </span>
+                  <span className="font-mono text-main">{item.name}</span>
+                  <span
+                    className="font-medium font-mono"
+                    style={{ color: item.color }}
+                  >
+                    {item.count} findings ({item.pct})
+                  </span>
+                </div>
+              ))
+            ) : (
+              <div className="text-xs text-muted py-4 text-center">
+                ✓ No vulnerabilities currently detected in database.
               </div>
-            ))}
+            )}
           </div>
         </Card>
       </div>

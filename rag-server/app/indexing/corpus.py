@@ -5,17 +5,19 @@ import json
 import logging
 import uuid
 from typing import Any
-import requests
+
+import httpx
 
 logger = logging.getLogger("rag_server")
 
 
 def load_corpus_from_url(url: str) -> list[dict[str, Any]]:
     logger.info(f"Downloading RAG corpus from {url}")
-    resp = requests.get(url, timeout=60)
-    resp.raise_for_status()
+    with httpx.Client(timeout=120.0, follow_redirects=True) as client:
+        resp = client.get(url)
+        resp.raise_for_status()
+        raw_bytes = resp.content
 
-    raw_bytes = resp.content
     if url.endswith(".gz"):
         raw_text = gzip.decompress(raw_bytes).decode("utf-8")
     else:
@@ -41,13 +43,20 @@ def index_chunks(qdrant_store, embedding_mgr, chunks: list[dict[str, Any]], batc
     if not client:
         return 0
 
-    qdrant_store.ensure_collection(vector_dim=embedding_mgr.dimension)
-
     total_indexed = 0
+    collection_ready = False
+
     for i in range(0, len(chunks), batch_size):
         batch = chunks[i : i + batch_size]
         texts = [b.get("content", "") or b.get("text", "") for b in batch]
         vectors = embedding_mgr.encode(texts)
+
+        # The embedding dimension is only known after the provider responds.
+        # Create/validate the collection on the first batch so the configured
+        # default cannot clash with the provider's actual output.
+        if not collection_ready:
+            qdrant_store.ensure_collection(vector_dim=len(vectors[0]))
+            collection_ready = True
 
         points = []
         for doc, vec in zip(batch, vectors):

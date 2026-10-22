@@ -52,6 +52,7 @@ services:
     build:
       context: ./rag-server
       dockerfile: Dockerfile
+    image: codesec-rag-server:local
     container_name: codesec-rag-server
     restart: unless-stopped
     ports:
@@ -59,16 +60,23 @@ services:
     environment:
       APP_ENV: ${APP_ENV:-development}
       QDRANT_URL: http://qdrant:6333
+      QDRANT_API_KEY: ${QDRANT_API_KEY:-}
       REDIS_URL: redis://redis:6379/0
       RAG_SERVICE_TOKEN: ${RAG_SERVICE_TOKEN:-dev_rag_service_token_secret}
-      RAG_EMBEDDING_MODEL: ${RAG_EMBEDDING_MODEL:-sentence-transformers/all-MiniLM-L6-v2}
+      # Any OpenAI-compatible /embeddings provider. Leave the key empty for
+      # local providers such as Ollama or LM Studio.
+      EMBEDDING_API_BASE: ${EMBEDDING_API_BASE:-https://api.openai.com/v1}
+      EMBEDDING_API_KEY: ${EMBEDDING_API_KEY:-}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-text-embedding-3-small}
+      EMBEDDING_DIM: ${EMBEDDING_DIM:-1536}
+      EMBEDDING_BATCH_SIZE: ${EMBEDDING_BATCH_SIZE:-64}
     depends_on:
       qdrant:
         condition: service_healthy
       redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8010/health/live"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8010/health/live')"]
       interval: 15s
       timeout: 5s
       retries: 3
@@ -80,6 +88,7 @@ services:
     build:
       context: ./main-server
       dockerfile: Dockerfile
+    image: codesec-main-server:local
     container_name: codesec-main-server
     restart: unless-stopped
     ports:
@@ -98,6 +107,10 @@ services:
       RAG_SERVICE_TOKEN: ${RAG_SERVICE_TOKEN:-dev_rag_service_token_secret}
       NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
       MAIN_SERVER_URL: ${MAIN_SERVER_URL:-http://localhost:8000}
+      # Route GitHub's callback through the client proxy so the session cookie
+      # is stored on the client origin (the browser's origin).
+      OAUTH_REDIRECT_URI: ${OAUTH_REDIRECT_URI:-http://localhost:3000/api/auth/github/callback}
+      RUN_WORKER_INLINE: "false"
     depends_on:
       postgres:
         condition: service_healthy
@@ -106,7 +119,7 @@ services:
       rag-server:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health/live"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/live')"]
       interval: 15s
       timeout: 5s
       retries: 3
@@ -115,9 +128,9 @@ services:
       - codesec_internal
 
   main-worker:
-    build:
-      context: ./main-server
-      dockerfile: Dockerfile
+    image: codesec-main-server:local
+    # Reuse the image built by main-server instead of trying to pull it.
+    pull_policy: never
     container_name: codesec-main-worker
     restart: unless-stopped
     command: ["python", "-m", "app.jobs.worker"]
@@ -127,6 +140,19 @@ services:
       REDIS_URL: redis://redis:6379/0
       RAG_SERVICE_URL: http://rag-server:8010
       RAG_SERVICE_TOKEN: ${RAG_SERVICE_TOKEN:-dev_rag_service_token_secret}
+      # Needed to post the review back as a PR comment (github_app.py).
+      GITHUB_APP_ID: ${GITHUB_APP_ID:-}
+      GITHUB_APP_PRIVATE_KEY: ${GITHUB_APP_PRIVATE_KEY:-}
+      # LLM review stage (pr_agent_client.py) - see docs/PR_AGENT_INTEGRATION_GUIDE.md.
+      # Groq first (free), then NVIDIA NIM, then Hugging Face as fallbacks.
+      PR_AGENT_REVIEW_ENABLED: ${PR_AGENT_REVIEW_ENABLED:-false}
+      PR_AGENT_MODEL: ${PR_AGENT_MODEL:-groq/llama-3.3-70b-versatile}
+      PR_AGENT_FALLBACK_MODELS: ${PR_AGENT_FALLBACK_MODELS:-nvidia_nim/meta/llama-3.1-70b-instruct,huggingface/meta-llama/Llama-3.1-8B-Instruct}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      NVIDIA_NIM_API_KEY: ${NVIDIA_NIM_API_KEY:-}
+      HUGGINGFACE_API_KEY: ${HUGGINGFACE_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
     depends_on:
       postgres:
         condition: service_healthy
@@ -143,18 +169,19 @@ services:
     build:
       context: ./client
       dockerfile: Dockerfile
+    image: codesec-client:local
     container_name: codesec-client
     restart: unless-stopped
     ports:
       - "3000:3000"
     environment:
-      NODE_ENV: development
+      NODE_ENV: production
       MAIN_SERVER_URL: http://main-server:8000
     depends_on:
       main-server:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/health || exit 1"]
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/health || exit 1"]
       interval: 15s
       timeout: 5s
       retries: 3

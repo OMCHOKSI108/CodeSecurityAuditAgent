@@ -16,6 +16,8 @@ import {
   SettingsIcon,
   TerminalIcon,
 } from "../ui/Icons";
+import { fetchMe } from "@/lib/api";
+import { UserProfile } from "@/types";
 
 interface NavLinkItem {
   name: string;
@@ -64,6 +66,15 @@ const NAV_GROUPS: { group: string; items: NavLinkItem[] }[] = [
 
 export function Sidebar() {
   const pathname = usePathname();
+  const [user, setUser] = React.useState<UserProfile | null>(null);
+
+  React.useEffect(() => {
+    fetchMe().then(setUser);
+  }, []);
+
+  const initials = user?.username ? user.username.slice(0, 2).toUpperCase() : "CS";
+  const orgName = user?.organization_name || "Acme Engineering";
+  const displayName = user?.username ? `${user.username} (${user.organization_role || "Member"})` : "User";
 
   return (
     <aside className="app-sidebar">
@@ -107,11 +118,11 @@ export function Sidebar() {
 
         <div style={{ display: "flex", alignItems: "center", gap: "0.65rem", paddingTop: "0.5rem", borderTop: "1px solid var(--border-subtle)" }}>
           <div style={{ width: "28px", height: "28px", borderRadius: "50%", background: "#1e293b", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.75rem", fontWeight: "bold", color: "var(--accent)" }}>
-            OC
+            {initials}
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: "0.8rem", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>Acme Engineering</div>
-            <div style={{ fontSize: "0.7rem", color: "var(--text-dim)" }}>Om Choksi (Admin)</div>
+            <div style={{ fontSize: "0.8rem", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{orgName}</div>
+            <div style={{ fontSize: "0.7rem", color: "var(--text-dim)" }}>{displayName}</div>
           </div>
         </div>
       </div>

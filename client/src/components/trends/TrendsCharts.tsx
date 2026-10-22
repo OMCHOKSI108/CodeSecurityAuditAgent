@@ -2,66 +2,45 @@
 
 import React, { useState } from "react";
 import { Card } from "@/components/ui/Card";
+import { AnalyticsTrends } from "@/types";
 
-export function TrendsCharts() {
+interface Props {
+  trends?: AnalyticsTrends | null;
+}
+
+export function TrendsCharts({ trends }: Props) {
   const [hoveredMonth, setHoveredMonth] = useState<string | null>(null);
 
-  const scoreData = [
-    { month: "May", score: 68 },
-    { month: "Jun", score: 72 },
-    { month: "Jul", score: 75 },
-    { month: "Aug", score: 79 },
-    { month: "Sep", score: 83 },
-    { month: "Oct", score: 87 },
-  ];
+  const scoreData =
+    trends?.score_progression && trends.score_progression.length > 0
+      ? trends.score_progression
+      : [{ month: "Current", score: trends?.security_score ?? 100 }];
 
-  const categoryData = [
-    {
-      name: "SQL Injection (CWE-89)",
-      count: 18,
-      pct: "35%",
-      color: "var(--crit-color)",
-      barBg: "rgba(239, 68, 68, 0.8)",
-    },
-    {
-      name: "Hardcoded Secrets (CWE-798)",
-      count: 14,
-      pct: "27%",
-      color: "var(--high-color)",
-      barBg: "rgba(249, 115, 22, 0.8)",
-    },
-    {
-      name: "Command Injection (CWE-78)",
-      count: 9,
-      pct: "18%",
-      color: "var(--med-color)",
-      barBg: "rgba(234, 179, 8, 0.8)",
-    },
-    {
-      name: "SSRF (CWE-918)",
-      count: 6,
-      pct: "12%",
-      color: "var(--low-color)",
-      barBg: "rgba(56, 189, 248, 0.8)",
-    },
-    {
-      name: "Broken Auth (CWE-287)",
-      count: 4,
-      pct: "8%",
-      color: "#a855f7",
-      barBg: "rgba(168, 85, 247, 0.8)",
-    },
-  ];
+  const categoryData =
+    trends?.cwe_distribution && trends.cwe_distribution.length > 0
+      ? trends.cwe_distribution
+      : [
+          {
+            name: "Clean / No Vulnerabilities",
+            cwe_id: "NONE",
+            count: 0,
+            pct: "100%",
+            color: "var(--pass-color)",
+            barBg: "rgba(34, 197, 94, 0.8)",
+          },
+        ];
+
+  const totalFindings = categoryData.reduce((acc, c) => acc + (c.count || 0), 0);
 
   return (
     <div className="grid-2">
       {/* Monthly Security Score Progression */}
       <Card
         title="Security Score Progression"
-        description="Past 6 months average security posture across repositories"
+        description="Average security posture across repositories"
         actions={
           <span className="badge badge-passed">
-            ↑ +19 pts total
+            Score: {trends?.security_score ?? 100}/100
           </span>
         }
       >
@@ -71,7 +50,7 @@ export function TrendsCharts() {
         >
           {scoreData.map((item) => {
             const isHovered = hoveredMonth === item.month;
-            const barHeight = Math.round((item.score / 100) * 120);
+            const barHeight = Math.max(12, Math.round((item.score / 100) * 120));
 
             return (
               <div
@@ -121,10 +100,10 @@ export function TrendsCharts() {
       {/* Vulnerabilities by Category */}
       <Card
         title="Vulnerabilities by Category"
-        description="Distribution of detected CWE patterns"
+        description="Distribution of detected CWE patterns in database"
         actions={
           <span className="text-xs text-dim font-mono">
-            51 total detected
+            {totalFindings} total detected
           </span>
         }
       >

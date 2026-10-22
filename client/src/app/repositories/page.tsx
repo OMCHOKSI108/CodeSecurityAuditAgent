@@ -18,14 +18,40 @@ export default function RepositoriesPage() {
     fetchRepositories().then((data) => setRepositories(data));
   }, []);
 
+  const totalRepos = repositories.length;
+  const protectedRepos = repositories.filter(
+    (r) => r.status === "Protected" || r.status === "Passed"
+  ).length;
+  const avgScore =
+    totalRepos > 0
+      ? Math.round(
+          repositories.reduce((acc, r) => acc + (r.security_score || 0), 0) /
+            totalRepos
+        )
+      : 100;
+  const totalOpenFindings = repositories.reduce(
+    (acc, r) => acc + (r.open_findings_count || 0),
+    0
+  );
+  const critCount = repositories.reduce(
+    (acc, r) => acc + (r.critical_count || 0),
+    0
+  );
+  const highCount = repositories.reduce(
+    (acc, r) => acc + (r.high_count || 0),
+    0
+  );
+
   const languages = useMemo(() => {
-    const set = new Set(repositories.map((r) => r.language));
+    const set = new Set(repositories.map((r) => r.language).filter(Boolean));
     return ["all", ...Array.from(set)];
   }, [repositories]);
 
   const filtered = useMemo(() => {
     return repositories.filter((r) => {
-      const matchSearch = r.name.toLowerCase().includes(search.toLowerCase());
+      const matchSearch =
+        r.name.toLowerCase().includes(search.toLowerCase()) ||
+        (r.full_name && r.full_name.toLowerCase().includes(search.toLowerCase()));
       const matchLang =
         selectedLanguage === "all" || r.language === selectedLanguage;
       return matchSearch && matchLang;
@@ -53,34 +79,38 @@ export default function RepositoriesPage() {
         }
       />
 
-      {/* 4 Summary stat cards */}
+      {/* 4 Summary stat cards dynamically computed from live repositories */}
       <div className="stat-grid">
         <MetricCard
           label="Monitored Repositories"
-          value="4"
+          value={String(totalRepos)}
           subtitle="All active branches tracked"
         />
 
         <MetricCard
           label="Protected Repositories"
-          value="4 / 4"
-          severity="passed"
-          subtitle="100% policy enforcement"
+          value={`${protectedRepos} / ${totalRepos}`}
+          severity={protectedRepos === totalRepos ? "passed" : "warning"}
+          subtitle={`${
+            totalRepos > 0
+              ? Math.round((protectedRepos / totalRepos) * 100)
+              : 100
+          }% policy enforcement`}
         />
 
         <MetricCard
           label="Avg Security Score"
-          value="86"
+          value={String(avgScore)}
           suffix="/ 100"
-          severity="passed"
+          severity={avgScore >= 80 ? "passed" : "critical"}
           subtitle="Target: >= 80"
         />
 
         <MetricCard
           label="Total Active Findings"
-          value="32"
-          severity="high"
-          subtitle="2 critical, 8 high"
+          value={String(totalOpenFindings)}
+          severity={critCount > 0 ? "critical" : "high"}
+          subtitle={`${critCount} critical, ${highCount} high`}
         />
       </div>
 
@@ -113,11 +143,11 @@ export default function RepositoriesPage() {
         </div>
 
         <span className="text-xs text-dim">
-          Showing {filtered.length} repositories
+          Showing {filtered.length} of {repositories.length} repositories
         </span>
       </div>
 
-      {/* Repositories table */}
+      {/* Repositories Table */}
       <RepositoriesTable repositories={filtered} />
     </div>
   );

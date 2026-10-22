@@ -36,6 +36,9 @@ async def list_repositories(
         med = counts.get("medium", 0)
         total_open = crit + high + med
 
+        pr_stmt = select(func.count(Review.id)).where(Review.repository_id == repo.id)
+        pr_count = (await db.execute(pr_stmt)).scalar() or 0
+
         score = max(20, 100 - (crit * 25 + high * 15 + med * 5))
         status = "Blocked" if crit > 0 else ("Warning" if high > 0 else "Protected")
 
@@ -52,6 +55,7 @@ async def list_repositories(
                 high_count=high,
                 medium_count=med,
                 open_findings_count=total_open,
+                pr_count=pr_count,
                 last_scan="1 hour ago" if total_open > 0 else "Recent",
                 status=status,
             )
@@ -67,7 +71,9 @@ async def get_repository(
 ):
     stmt = select(Repository).where(
         Repository.organization_id == tenant.organization.id,
-        (Repository.id == repo_id) | (Repository.full_name == repo_id),
+        (Repository.id == repo_id)
+        | (Repository.full_name == repo_id)
+        | (Repository.full_name.endswith("/" + repo_id)),
     )
     repo = (await db.execute(stmt)).scalar_one_or_none()
     if not repo:
@@ -85,6 +91,10 @@ async def get_repository(
     high = counts.get("high", 0)
     med = counts.get("medium", 0)
     total_open = crit + high + med
+
+    pr_stmt = select(func.count(Review.id)).where(Review.repository_id == repo.id)
+    pr_count = (await db.execute(pr_stmt)).scalar() or 0
+
     score = max(20, 100 - (crit * 25 + high * 15 + med * 5))
     status = "Blocked" if crit > 0 else ("Warning" if high > 0 else "Protected")
 
@@ -100,6 +110,7 @@ async def get_repository(
         high_count=high,
         medium_count=med,
         open_findings_count=total_open,
+        pr_count=pr_count,
         last_scan="1 hour ago" if total_open > 0 else "Recent",
         status=status,
     )

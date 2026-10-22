@@ -1,6 +1,15 @@
-import { Finding, LogEntry, PullRequest, Repository, ReviewRecord, SecurityPolicy, UserProfile } from "@/types";
-import { MOCK_PRS, MOCK_REPOSITORIES, MOCK_POLICY, MOCK_TEAM, MOCK_REPORT } from "./mockData";
-import { MOCK_FINDINGS } from "./mockFindings";
+import {
+  AnalyticsTrends,
+  Finding,
+  LogEntry,
+  PullRequest,
+  ReportSummary,
+  Repository,
+  ReviewRecord,
+  SecurityPolicy,
+  TeamMember,
+  UserProfile,
+} from "@/types";
 
 export async function fetchMe(): Promise<UserProfile> {
   try {
@@ -23,7 +32,10 @@ export async function fetchMe(): Promise<UserProfile> {
 export async function fetchReviews(): Promise<ReviewRecord[]> {
   try {
     const res = await fetch("/api/reviews", { credentials: "include" });
-    if (res.ok) return await res.json();
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data)) return data;
+    }
   } catch {}
   return [];
 }
@@ -39,35 +51,59 @@ export async function fetchReviewDetail(id: string): Promise<ReviewRecord | null
 export async function fetchPullRequests(): Promise<PullRequest[]> {
   const reviews = await fetchReviews();
   if (reviews.length > 0) {
+    const allFindings = await fetchFindings();
     const livePrs: PullRequest[] = reviews.map((r) => {
-      const crit = r.findings.filter((f) => f.severity === "critical").length;
-      const high = r.findings.filter((f) => f.severity === "high").length;
-      const med = r.findings.filter((f) => f.severity === "medium").length;
-      const low = r.findings.filter((f) => f.severity === "low").length;
+      const rFindings = r.findings && r.findings.length > 0
+        ? r.findings
+        : allFindings.filter((f) => (f as any).review_id === r.id);
+      const crit = rFindings.filter((f) => f.severity === "critical").length;
+      const high = rFindings.filter((f) => f.severity === "high").length;
+      const med = rFindings.filter((f) => f.severity === "medium").length;
+      const low = rFindings.filter((f) => f.severity === "low").length;
       return {
         id: r.id,
-        pr_number: r.pr_number,
-        title: `Security Audit PR #${r.pr_number}`,
-        repository: r.repository_id || "production-repo",
+        pr_number: r.pr_number || 1,
+        title: `Security Audit PR #${r.pr_number || 1}`,
+        repository: r.repository_id || "CodeSecurityAuditAgent",
         author: "GitHub Author",
-        security_score: 100 - r.risk_score,
+        security_score: Math.max(0, 100 - r.risk_score),
         findings_summary: { critical: crit, high, medium: med, low },
         gate_status: r.verdict === "APPROVE" ? "PASSED" : "BLOCKED",
         scanned_at: new Date(r.created_at).toLocaleDateString(),
-        commit_sha: r.commit_sha.slice(0, 7),
+        commit_sha: r.commit_sha ? r.commit_sha.slice(0, 7) : "HEAD",
         gate_reason: r.summary,
-        findings: r.findings,
+        findings: rFindings,
       };
     });
-    return [...livePrs, ...MOCK_PRS];
+    return livePrs;
   }
-  return MOCK_PRS;
+  return [];
 }
 
 export async function fetchPullRequestById(id: string): Promise<PullRequest | null> {
+  const review = await fetchReviewDetail(id);
+  if (review) {
+    const crit = review.findings.filter((f) => f.severity === "critical").length;
+    const high = review.findings.filter((f) => f.severity === "high").length;
+    const med = review.findings.filter((f) => f.severity === "medium").length;
+    const low = review.findings.filter((f) => f.severity === "low").length;
+    return {
+      id: review.id,
+      pr_number: review.pr_number || 1,
+      title: `Security Audit PR #${review.pr_number || 1}`,
+      repository: review.repository_id || "CodeSecurityAuditAgent",
+      author: "GitHub Author",
+      security_score: Math.max(0, 100 - review.risk_score),
+      findings_summary: { critical: crit, high, medium: med, low },
+      gate_status: review.verdict === "APPROVE" ? "PASSED" : "BLOCKED",
+      scanned_at: new Date(review.created_at).toLocaleDateString(),
+      commit_sha: review.commit_sha ? review.commit_sha.slice(0, 7) : "HEAD",
+      gate_reason: review.summary,
+      findings: review.findings as any,
+    };
+  }
   const all = await fetchPullRequests();
-  const found = all.find((p) => p.id === id || String(p.pr_number) === id);
-  return found || MOCK_PRS[0];
+  return all.find((p) => p.id === id || String(p.pr_number) === id) || null;
 }
 
 export async function fetchRepositories(): Promise<Repository[]> {
@@ -75,16 +111,19 @@ export async function fetchRepositories(): Promise<Repository[]> {
     const res = await fetch("/api/repositories", { credentials: "include" });
     if (res.ok) {
       const data = await res.json();
-      if (Array.isArray(data) && data.length > 0) return data;
+      if (Array.isArray(data)) return data;
     }
   } catch {}
-  return MOCK_REPOSITORIES;
+  return [];
 }
 
 export async function fetchRepositoryById(id: string): Promise<Repository | null> {
+  try {
+    const res = await fetch(`/api/repositories/${id}`, { credentials: "include" });
+    if (res.ok) return await res.json();
+  } catch {}
   const all = await fetchRepositories();
-  const found = all.find((r) => r.id === id || r.name === id);
-  return found || MOCK_REPOSITORIES[0];
+  return all.find((r) => r.id === id || r.name === id) || null;
 }
 
 export async function fetchFindings(): Promise<Finding[]> {
@@ -92,16 +131,36 @@ export async function fetchFindings(): Promise<Finding[]> {
     const res = await fetch("/api/findings", { credentials: "include" });
     if (res.ok) {
       const data = await res.json();
-      if (Array.isArray(data) && data.length > 0) return data;
+      if (Array.isArray(data)) return data;
     }
   } catch {}
-  return MOCK_FINDINGS;
+  return [];
 }
 
 export async function fetchFindingById(id: string): Promise<Finding | null> {
+  try {
+    const res = await fetch(`/api/findings/${id}`, { credentials: "include" });
+    if (res.ok) return await res.json();
+  } catch {}
   const all = await fetchFindings();
-  const found = all.find((f) => f.id === id);
-  return found || MOCK_FINDINGS[0];
+  return all.find((f) => f.id === id) || null;
+}
+
+export async function updateFindingStatus(
+  findingId: string,
+  status: "open" | "resolved" | "ignored"
+): Promise<boolean> {
+  try {
+    const res = await fetch(`/api/findings/${findingId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status }),
+      credentials: "include",
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
 }
 
 export async function fetchSecurityPolicy(): Promise<SecurityPolicy> {
@@ -109,45 +168,67 @@ export async function fetchSecurityPolicy(): Promise<SecurityPolicy> {
     const res = await fetch("/api/policies", { credentials: "include" });
     if (res.ok) return await res.json();
   } catch {}
-  if (typeof window !== "undefined") {
-    const stored = localStorage.getItem("codesec_policy");
-    if (stored) {
-      try {
-        return JSON.parse(stored);
-      } catch {}
-    }
-  }
-  return MOCK_POLICY;
+  return {
+    block_critical: true,
+    block_secrets: true,
+    block_high: true,
+    block_medium: false,
+    min_security_score: 80,
+    confidence_threshold: 70,
+    secret_detection: true,
+  };
 }
 
 export async function saveSecurityPolicy(policy: SecurityPolicy): Promise<boolean> {
   try {
-    await fetch("/api/policies", {
+    const res = await fetch("/api/policies", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(policy),
       credentials: "include",
     });
-  } catch {}
-  if (typeof window !== "undefined") {
-    localStorage.setItem("codesec_policy", JSON.stringify(policy));
+    return res.ok;
+  } catch {
+    return false;
   }
-  return true;
 }
 
-export async function fetchTeamMembers() {
+export async function fetchTeamMembers(): Promise<TeamMember[]> {
   try {
     const res = await fetch("/api/team", { credentials: "include" });
     if (res.ok) {
       const data = await res.json();
-      if (Array.isArray(data) && data.length > 0) return data;
+      if (Array.isArray(data)) {
+        return data.map((m: any) => ({
+          id: m.id,
+          name: m.name,
+          email: m.email,
+          role: m.role as any,
+          prs_reviewed: 0,
+          findings_resolved: 0,
+          last_active: m.last_active || "Active now",
+          avatar_url: m.avatar,
+        }));
+      }
     }
   } catch {}
-  return MOCK_TEAM;
+  return [];
 }
 
-export async function fetchReportSummary() {
-  return MOCK_REPORT;
+export async function fetchAnalyticsTrends(): Promise<AnalyticsTrends | null> {
+  try {
+    const res = await fetch("/api/analytics/trends", { credentials: "include" });
+    if (res.ok) return await res.json();
+  } catch {}
+  return null;
+}
+
+export async function fetchReportSummary(): Promise<ReportSummary | null> {
+  try {
+    const res = await fetch("/api/reports/summary", { credentials: "include" });
+    if (res.ok) return await res.json();
+  } catch {}
+  return null;
 }
 
 export async function fetchLogs(

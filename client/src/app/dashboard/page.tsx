@@ -25,6 +25,20 @@ export default function DashboardPage() {
       .finally(() => setLoading(false));
   }, []);
 
+  const totalFindings = repos.reduce((acc, r) => acc + (r.open_findings_count || 0), 0);
+  const criticalCount = repos.reduce((acc, r) => acc + (r.critical_count || 0), 0);
+  const blockedPrsCount = prs.filter((p) => p.gate_status === "BLOCKED").length;
+
+  const avgSecurityScore =
+    repos.length > 0
+      ? Math.round(repos.reduce((acc, r) => acc + (r.security_score || 0), 0) / repos.length)
+      : 100;
+
+  const primaryBlockedRepo =
+    repos.find((r) => r.critical_count > 0)?.name ||
+    repos[0]?.name ||
+    "Monitored Repositories";
+
   return (
     <div className="space-y">
       {/* Page Header */}
@@ -40,72 +54,90 @@ export default function DashboardPage() {
         }
       />
 
-      {/* Immediate Attention Callout: What needs attention right now */}
-      <div className="banner-alert">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <span className="badge badge-critical">⚠️ Action Required</span>
-            <span className="text-muted text-xs">&bull; 23 open findings</span>
+      {/* Immediate Attention Callout */}
+      {criticalCount > 0 ? (
+        <div className="banner-alert">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="badge badge-critical">⚠️ Action Required</span>
+              <span className="text-muted text-xs">&bull; {totalFindings} open findings</span>
+            </div>
+            <p className="text-sm text-main font-medium mt-1">
+              <strong style={{ color: "var(--crit-color)" }}>
+                {criticalCount} Critical finding{criticalCount === 1 ? "" : "s"}
+              </strong>{" "}
+              {blockedPrsCount > 0 ? (
+                <>
+                  currently blocking{" "}
+                  <strong style={{ color: "var(--crit-color)" }}>
+                    {blockedPrsCount} Pull Request{blockedPrsCount === 1 ? "" : "s"}
+                  </strong>{" "}
+                  in <code className="crumb-badge">{primaryBlockedRepo}</code>.
+                </>
+              ) : (
+                <>detected in monitored codebases.</>
+              )}
+            </p>
           </div>
-          <p className="text-sm text-main font-medium mt-1">
-            <strong style={{ color: "var(--crit-color)" }}>
-              2 Critical findings
-            </strong>{" "}
-            are currently blocking{" "}
-            <strong style={{ color: "var(--crit-color)" }}>
-              3 Pull Requests
-            </strong>{" "}
-            in <code className="crumb-badge">payment-api</code>.
-          </p>
-        </div>
 
-        <div className="flex items-center gap-2 flex-wrap">
-          <Link href="/findings?severity=critical">
-            <Button variant="danger" size="sm">
-              Review Critical Findings →
-            </Button>
-          </Link>
-          <Link href="/pull-requests">
-            <Button variant="secondary" size="sm">
-              View Blocked PRs (3)
-            </Button>
-          </Link>
+          <div className="flex items-center gap-2 flex-wrap">
+            <Link href="/findings?severity=critical">
+              <Button variant="danger" size="sm">
+                Review Critical Findings →
+              </Button>
+            </Link>
+            {blockedPrsCount > 0 && (
+              <Link href="/pull-requests">
+                <Button variant="secondary" size="sm">
+                  View Blocked PRs ({blockedPrsCount})
+                </Button>
+              </Link>
+            )}
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="p-3.5 rounded-lg border text-xs flex items-center justify-between" style={{ backgroundColor: "var(--pass-bg)", borderColor: "var(--pass-border)", color: "var(--pass-color)" }}>
+          <div className="flex items-center gap-2">
+            <span>🛡️</span>
+            <span className="font-semibold">All Policy Gates Healthy: Zero critical security regressions detected.</span>
+          </div>
+          <span className="text-muted text-[11px]">{totalFindings} total informational/low findings</span>
+        </div>
+      )}
 
-      {/* 4 Core Metrics */}
+      {/* 4 Core Metrics dynamically computed from live state */}
       <div className="stat-grid">
         <MetricCard
           label="Security Score"
-          value="87"
+          value={String(avgSecurityScore)}
           suffix="/ 100"
           trend="+4%"
           trendDirection="up"
           trendPositive={true}
-          subtitle="from last week"
+          subtitle="weighted average"
         />
 
         <MetricCard
           label="Open Findings"
-          value="23"
-          trend="12% reduction"
+          value={String(totalFindings)}
+          trend={totalFindings > 0 ? "Active" : "Clean"}
           trendDirection="down"
           trendPositive={true}
-          subtitle="across 4 repos"
+          subtitle={`across ${repos.length} repo${repos.length === 1 ? "" : "s"}`}
         />
 
         <MetricCard
           label="Critical Issues"
-          value="2"
-          severity="critical"
-          subtitle="🔴 Blocking merges"
+          value={String(criticalCount)}
+          severity={criticalCount > 0 ? "critical" : "passed"}
+          subtitle={criticalCount > 0 ? "🔴 Blocking merges" : "✓ Clean posture"}
         />
 
         <MetricCard
           label="PRs Blocked"
-          value="3"
-          severity="critical"
-          subtitle="Strict policy gate active"
+          value={String(blockedPrsCount)}
+          severity={blockedPrsCount > 0 ? "critical" : "passed"}
+          subtitle={blockedPrsCount > 0 ? "Strict policy gate active" : "✓ All gates passing"}
         />
       </div>
 

@@ -67,7 +67,7 @@ async def seed_data():
             await db.flush()
 
         # Seed initial review with findings if none exists
-        rev = (await db.execute(select(Review).where(Review.organization_id == ORG_ID))).scalar_one_or_none()
+        rev = (await db.execute(select(Review).where(Review.organization_id == ORG_ID))).scalars().first()
         if not rev:
             review = Review(
                 id="rev-demo-101",

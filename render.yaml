@@ -1,0 +1,166 @@
+# Render Blueprint for the CodeSecurityAuditAgent stack.
+#
+# main-server and rag-server deploy as native Render "python" services (pip
+# install + a start command - no Dockerfile/image build), per request. The
+# client deploys separately on Vercel (see client/.env.example); the
+# "codesec-client" block below is kept only as an optional Render alternative.
+#
+# This layout targets Render's free/entry plans:
+#   * The review worker runs inside the main-server process because free plans
+#     do not include background workers (RUN_WORKER_INLINE=true).
+#   * Qdrant and the embedding model are external services.
+#
+# After the first deploy, fill in the `sync: false` values in the Render
+# dashboard. See docs/render-deploy.md for the full checklist.
+
+services:
+  - type: web
+    name: codesec-main
+    runtime: python
+    plan: free
+    region: oregon
+    rootDir: main-server
+    buildCommand: pip install .
+    # Free Render web services do not support preDeployCommand, so migrations
+    # run as part of the start command. Alembic is idempotent.
+    startCommand: 'alembic upgrade head && exec python -m uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}'
+    healthCheckPath: /health/live
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.8"
+      - key: APP_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: codesec-postgres
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          name: codesec-redis
+          type: keyvalue
+          property: connectionString
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: RAG_SERVICE_URL
+        fromService:
+          name: codesec-rag
+          type: web
+          property: hostport
+      - key: RAG_SERVICE_TOKEN
+        sync: false
+      # Public URL of the client deployment (Vercel), e.g.
+      # https://codesec-client.vercel.app
+      - key: NEXT_PUBLIC_APP_URL
+        sync: false
+      # Must point at the client origin so the session cookie is set there:
+      # https://codesec-client.vercel.app/api/auth/github/callback
+      - key: OAUTH_REDIRECT_URI
+        sync: false
+      - key: RUN_WORKER_INLINE
+        value: "true"
+      - key: GITHUB_CLIENT_ID
+        sync: false
+      - key: GITHUB_CLIENT_SECRET
+        sync: false
+      - key: GITHUB_APP_ID
+        sync: false
+      - key: GITHUB_APP_PRIVATE_KEY
+        sync: false
+      - key: GITHUB_WEBHOOK_SECRET
+        sync: false
+      # LLM review stage (pr_agent_client.py) - see
+      # docs/PR_AGENT_INTEGRATION_GUIDE.md section 5. Groq first (free),
+      # then NVIDIA NIM, then Hugging Face - retry_with_fallback_models()
+      # only advances to the next one on failure/rate-limit.
+      - key: PR_AGENT_REVIEW_ENABLED
+        value: "true"
+      - key: PR_AGENT_MODEL
+        value: groq/llama-3.3-70b-versatile
+      - key: PR_AGENT_FALLBACK_MODELS
+        value: nvidia_nim/meta/llama-3.1-70b-instruct,huggingface/meta-llama/Llama-3.1-8B-Instruct
+      - key: GROQ_API_KEY
+        sync: false
+      - key: NVIDIA_NIM_API_KEY
+        sync: false
+      - key: HUGGINGFACE_API_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+
+  - type: web
+    name: codesec-rag
+    runtime: python
+    plan: free
+    region: oregon
+    rootDir: rag-server
+    buildCommand: pip install .
+    startCommand: 'exec python -m uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8010}'
+    healthCheckPath: /health/live
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.8"
+      - key: APP_ENV
+        value: production
+      - key: REDIS_URL
+        fromService:
+          name: codesec-redis
+          type: keyvalue
+          property: connectionString
+      - key: RAG_SERVICE_TOKEN
+        sync: false
+      # Qdrant Cloud cluster URL, e.g. https://xxxx.cloud.qdrant.io:6333
+      - key: QDRANT_URL
+        sync: false
+      - key: QDRANT_API_KEY
+        sync: false
+      # Any OpenAI-compatible /embeddings API. Hugging Face's router also
+      # works here (https://router.huggingface.co/v1 + HUGGINGFACE_API_KEY)
+      # if you'd rather keep one provider for both embeddings and fallback LLM.
+      - key: EMBEDDING_API_BASE
+        value: https://api.openai.com/v1
+      - key: EMBEDDING_API_KEY
+        sync: false
+      - key: EMBEDDING_MODEL
+        value: text-embedding-3-small
+      - key: EMBEDDING_DIM
+        value: "1536"
+      # Use a fresh collection name whenever the embedding model changes.
+      - key: RAG_COLLECTION_NAME
+        value: secure_guidance_v1
+
+  # Optional Render alternative to deploying the client on Vercel. Not part
+  # of the primary deploy path - see client/.env.example for Vercel instead.
+  - type: web
+    name: codesec-client
+    runtime: docker
+    plan: free
+    region: oregon
+    dockerfilePath: ./client/Dockerfile
+    dockerContext: ./client
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: MAIN_SERVER_URL
+        fromService:
+          name: codesec-main
+          type: web
+          property: hostport
+
+  # Render Key Value instances live in `services`, not `databases`.
+  # ipAllowList: [] keeps it private (internal connections only).
+  - type: keyvalue
+    name: codesec-redis
+    plan: free
+    region: oregon
+    ipAllowList: []
+
+databases:
+  - name: codesec-postgres
+    plan: free
+    databaseName: codesec
+    user: codesec
+    postgresMajorVersion: "16"

@@ -8,7 +8,7 @@ export interface MetricCardProps {
   trendDirection?: "up" | "down" | "neutral";
   trendPositive?: boolean;
   subtitle?: string;
-  severity?: "critical" | "high" | "medium" | "low" | "passed" | "normal";
+  severity?: "critical" | "high" | "medium" | "low" | "passed" | "normal" | "warning";
   icon?: React.ReactNode;
   onClick?: () => void;
   className?: string;
@@ -29,7 +29,7 @@ export function MetricCard({
 }: MetricCardProps) {
   let valueColor = "var(--text-main)";
   if (severity === "critical") valueColor = "var(--crit-color)";
-  else if (severity === "high") valueColor = "var(--high-color)";
+  else if (severity === "high" || severity === "warning") valueColor = "var(--high-color)";
   else if (severity === "medium") valueColor = "var(--med-color)";
   else if (severity === "passed") valueColor = "var(--pass-color)";
 

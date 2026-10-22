@@ -1,5 +1,6 @@
 """RAG Server application entrypoint."""
 
+import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -13,10 +14,13 @@ from app.embeddings.model import get_embedding_manager
 async def lifespan(app: FastAPI):
     settings = get_settings()
     setup_logger(settings.redis_url)
-    import threading
-
+    logger = logging.getLogger("rag_server")
     mgr = get_embedding_manager(settings.rag_embedding_model)
-    threading.Thread(target=mgr.load_model, daemon=True).start()
+    if not mgr.is_ready:
+        logger.warning(
+            "Embedding provider is not configured. Set EMBEDDING_API_BASE and "
+            "EMBEDDING_MODEL (plus EMBEDDING_API_KEY if required) to enable RAG search."
+        )
     yield
 
 

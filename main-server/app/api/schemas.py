@@ -38,6 +38,12 @@ class FindingItem(BaseModel):
     line_number: Optional[int]
     code_snippet: Optional[str]
     suggested_fix: Optional[str]
+    status: Optional[str] = "open"
+    review_id: Optional[str] = None
+
+
+class UpdateFindingStatusRequest(BaseModel):
+    status: str
 
 
 class ReviewDetailResponse(BaseModel):
@@ -79,6 +85,7 @@ class RepositoryResponse(BaseModel):
     high_count: int = 0
     medium_count: int = 0
     open_findings_count: int = 0
+    pr_count: int = 0
     last_scan: str = "Recent"
     status: str = "Protected"
 
@@ -100,4 +107,45 @@ class TeamMemberResponse(BaseModel):
     role: str
     avatar: str
     last_active: str
+
+
+class ScoreProgressionItem(BaseModel):
+    month: str
+    score: int
+
+
+class CWEDistributionItem(BaseModel):
+    name: str
+    cwe_id: str
+    count: int
+    pct: str
+    color: str
+    barBg: str
+
+
+class GateVerdictsItem(BaseModel):
+    passed_count: int
+    passed_pct: float
+    blocked_count: int
+    blocked_pct: float
+
+
+class AnalyticsTrendsResponse(BaseModel):
+    security_score: int
+    critical_active: int
+    mttr_hours: float
+    gate_enforcement_pct: float
+    score_progression: list[ScoreProgressionItem]
+    cwe_distribution: list[CWEDistributionItem]
+    gate_verdicts: GateVerdictsItem
+
+
+class ReportSummaryResponse(BaseModel):
+    period: str
+    repos_scanned: int
+    prs_scanned: int
+    vulnerabilities_detected: int
+    critical_vulnerabilities: int
+    resolved_vulnerabilities: int
+    avg_remediation_hours: dict[str, float]
 

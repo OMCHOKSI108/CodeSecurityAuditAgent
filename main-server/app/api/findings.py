@@ -4,6 +4,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from app.api.schemas import UpdateFindingStatusRequest
 from app.db.models.github import Repository
 from app.db.models.review import Finding, Review
 from app.db.session import get_db
@@ -15,6 +16,7 @@ router = APIRouter(prefix="/v1/findings", tags=["Findings"])
 def _format_finding(f: Finding, repo_name: str, created_at: str) -> dict:
     return {
         "id": f.id,
+        "review_id": f.review_id,
         "cwe_id": f.cwe_id,
         "severity": f.severity,
         "title": f.title,
@@ -28,7 +30,7 @@ def _format_finding(f: Finding, repo_name: str, created_at: str) -> dict:
         "confidence": 95,
         "security_principle": "Input Validation & Defense in Depth",
         "reasoning_summary": f.suggested_fix or "Review code snippet against OWASP guidelines.",
-        "status": "open",
+        "status": getattr(f, "status", None) or "open",
         "detected_at": created_at,
         "repository": repo_name,
     }
@@ -81,3 +83,35 @@ async def get_finding(
 
     f, repo_name, dt = row
     return _format_finding(f, repo_name or "production-repo", dt.isoformat() if dt else "Recent")
+
+
+@router.patch("/{finding_id}")
+async def update_finding_status(
+    finding_id: str,
+    req: UpdateFindingStatusRequest,
+    tenant: TenantContext = Depends(get_tenant_context),
+    db: AsyncSession = Depends(get_db),
+):
+    normalized_status = req.status.strip().lower()
+    if normalized_status not in ["open", "resolved", "ignored"]:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid status '{req.status}'. Must be 'open', 'resolved', or 'ignored'.",
+        )
+
+    stmt = (
+        select(Finding, Repository.full_name, Review.created_at)
+        .join(Review, Review.id == Finding.review_id)
+        .join(Repository, Repository.id == Review.repository_id, isouter=True)
+        .where(Finding.id == finding_id, Finding.organization_id == tenant.organization.id)
+    )
+    row = (await db.execute(stmt)).first()
+    if not row:
+        raise HTTPException(status_code=404, detail="Finding not found")
+
+    finding, repo_name, dt = row
+    finding.status = normalized_status
+    await db.commit()
+    await db.refresh(finding)
+
+    return _format_finding(finding, repo_name or "production-repo", dt.isoformat() if dt else "Recent")

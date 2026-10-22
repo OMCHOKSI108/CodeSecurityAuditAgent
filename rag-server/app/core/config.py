@@ -11,13 +11,22 @@ class Settings(BaseSettings):
     git_sha: str = Field(default="local", alias="GIT_SHA")
 
     qdrant_url: str = Field(default="http://qdrant:6333", alias="QDRANT_URL")
+    qdrant_api_key: str = Field(default="", alias="QDRANT_API_KEY")
     redis_url: str = Field(default="redis://redis:6379/0", alias="REDIS_URL")
 
     rag_service_token: str = Field(default="dev_rag_service_token_secret", alias="RAG_SERVICE_TOKEN")
-    rag_embedding_model: str = Field(
-        default="sentence-transformers/all-MiniLM-L6-v2",
-        alias="RAG_EMBEDDING_MODEL",
-    )
+
+    # Embeddings are produced by an external OpenAI-compatible /embeddings API.
+    # This keeps the image small (no torch/CUDA/transformers). Any provider that
+    # implements POST {base}/embeddings works: OpenAI, Jina, Voyage, Together,
+    # Ollama, LM Studio, etc.
+    rag_embedding_model: str = Field(default="text-embedding-3-small", alias="EMBEDDING_MODEL")
+    embedding_api_base: str = Field(default="", alias="EMBEDDING_API_BASE")
+    embedding_api_key: str = Field(default="", alias="EMBEDDING_API_KEY")
+    embedding_dim: int = Field(default=1536, alias="EMBEDDING_DIM")
+    embedding_timeout: float = Field(default=30.0, alias="EMBEDDING_TIMEOUT")
+    embedding_batch_size: int = Field(default=64, alias="EMBEDDING_BATCH_SIZE")
+
     rag_corpus_version: str = Field(default="v1", alias="RAG_CORPUS_VERSION")
     rag_collection_name: str = Field(default="secure_guidance_v1", alias="RAG_COLLECTION_NAME")
     log_redaction_enabled: bool = Field(default=True, alias="LOG_REDACTION_ENABLED")

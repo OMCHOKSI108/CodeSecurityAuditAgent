@@ -106,9 +106,14 @@ export default function RepositoryDetailPage() {
 
       <div className="stat-grid">
         <MetricCard label="Security Score" value={repo.security_score} suffix="/ 100" severity={repo.security_score >= 85 ? "passed" : "medium"} subtitle="Continuous gate posture" />
-        <MetricCard label="PRs Audited" value={repo.pr_count || 42} subtitle="All PR checks resolved" />
+        <MetricCard label="PRs Audited" value={repo.pr_count ?? prs.length} subtitle="Live repository pull requests" />
         <MetricCard label="Open Vulnerabilities" value={repo.open_findings_count} severity={repo.open_findings_count > 0 ? "critical" : "passed"} subtitle="Require developer fix" />
-        <MetricCard label="Mean Time to Fix" value="3.4 hrs" trend="-25%" trendDirection="down" trendPositive={true} subtitle="Faster than team SLA" />
+        <MetricCard
+          label="Resolved Findings"
+          value={findings.filter((f) => f.status === "resolved").length}
+          severity="passed"
+          subtitle="Fixed security issues"
+        />
       </div>
 
       <Card title="Pull Request Audit History" description="Automated security assessments for incoming code branches">

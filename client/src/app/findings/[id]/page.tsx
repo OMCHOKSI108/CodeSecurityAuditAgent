@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Finding } from "@/types";
-import { fetchFindingById } from "@/lib/api";
+import { fetchFindingById, updateFindingStatus } from "@/lib/api";
 import { SeverityBadge, StatusBadge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { ArrowLeftIcon, GitHubIcon } from "@/components/ui/Icons";
@@ -22,10 +22,17 @@ export default function FindingDetailPage() {
     });
   }, [findingId]);
 
-  const handleStatusChange = (newStatus: "open" | "resolved" | "ignored") => {
+  const handleStatusChange = async (newStatus: "open" | "resolved" | "ignored") => {
     if (!finding) return;
+    const prevStatus = finding.status;
     setFinding({ ...finding, status: newStatus });
-    setToastMessage(`Finding status updated to "${newStatus}".`);
+    const ok = await updateFindingStatus(finding.id, newStatus);
+    if (ok) {
+      setToastMessage(`Finding status updated to "${newStatus}" in database.`);
+    } else {
+      setFinding({ ...finding, status: prevStatus });
+      setToastMessage(`Failed to update finding status in database.`);
+    }
     setTimeout(() => setToastMessage(null), 3000);
   };
 

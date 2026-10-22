@@ -7,16 +7,28 @@ logger = logging.getLogger("rag_server")
 
 
 class QdrantStore:
-    def __init__(self, qdrant_url: str, collection_name: str = "secure_guidance_v1"):
+    def __init__(
+        self,
+        qdrant_url: str,
+        collection_name: str = "secure_guidance_v1",
+        api_key: str = "",
+    ):
         self.qdrant_url = qdrant_url
         self.collection_name = collection_name
+        self.api_key = api_key or None
         self._client: Optional[Any] = None
 
     def get_client(self) -> Optional[Any]:
         if self._client is None:
             try:
                 from qdrant_client import QdrantClient
-                self._client = QdrantClient(url=self.qdrant_url, timeout=10.0, check_compatibility=False)
+
+                self._client = QdrantClient(
+                    url=self.qdrant_url,
+                    api_key=self.api_key,
+                    timeout=15.0,
+                    check_compatibility=False,
+                )
             except Exception as e:
                 logger.warning(f"Could not connect to Qdrant: {e}")
                 return None
@@ -32,21 +44,37 @@ class QdrantStore:
         except Exception:
             return False
 
-    def ensure_collection(self, vector_dim: int = 384) -> None:
+    def ensure_collection(self, vector_dim: int) -> None:
         client = self.get_client()
         if not client:
             return
+        if vector_dim <= 0:
+            raise ValueError(f"Invalid embedding dimension: {vector_dim}")
+
         from qdrant_client.http import models
-        collections = [c.name for c in client.get_collections().collections]
-        if self.collection_name not in collections:
-            logger.info(f"Creating Qdrant collection {self.collection_name} (dim={vector_dim})")
-            client.create_collection(
-                collection_name=self.collection_name,
-                vectors_config=models.VectorParams(
-                    size=vector_dim,
-                    distance=models.Distance.COSINE,
-                ),
-            )
+
+        if client.collection_exists(self.collection_name):
+            info = client.get_collection(self.collection_name)
+            params = info.config.params
+            vectors = getattr(params, "vectors", None)
+            existing_dim = getattr(vectors, "size", None)
+            if existing_dim is not None and existing_dim != vector_dim:
+                raise ValueError(
+                    f"Qdrant collection '{self.collection_name}' has vector size "
+                    f"{existing_dim}, but the embedding provider returned {vector_dim}. "
+                    "Set RAG_COLLECTION_NAME to a new name (or delete the collection) "
+                    "and re-index the corpus."
+                )
+            return
+
+        logger.info(f"Creating Qdrant collection {self.collection_name} (dim={vector_dim})")
+        client.create_collection(
+            collection_name=self.collection_name,
+            vectors_config=models.VectorParams(
+                size=vector_dim,
+                distance=models.Distance.COSINE,
+            ),
+        )
 
     def search(
         self,
@@ -90,7 +118,8 @@ class QdrantStore:
                 )
             else:
                 return []
-        except Exception:
+        except Exception as exc:
+            logger.warning(f"Qdrant search failed: {exc}")
             return []
 
         formatted = []

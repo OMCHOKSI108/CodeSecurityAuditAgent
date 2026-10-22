@@ -46,3 +46,4 @@ class Finding(Base, TimestampMixin):
     line_number: Mapped[int] = mapped_column(Integer, nullable=True)
     code_snippet: Mapped[str] = mapped_column(Text, nullable=True)  # Redacted snippet
     suggested_fix: Mapped[str] = mapped_column(Text, nullable=True)
+    status: Mapped[str] = mapped_column(String(32), default="open", nullable=False)

@@ -1,8 +1,10 @@
 """Main Server application entrypoint."""
 
+import asyncio
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from app.api.analytics import router as analytics_router
 from app.api.auth import router as auth_router
 from app.api.findings import router as findings_router
 from app.api.health import router as health_router
@@ -20,7 +22,18 @@ from app.core.logging import setup_logger
 async def lifespan(app: FastAPI):
     settings = get_settings()
     setup_logger(settings.redis_url)
+    worker_task = None
+    if settings.run_worker_inline:
+        from app.jobs.worker import run_worker_loop
+
+        worker_task = asyncio.create_task(run_worker_loop())
     yield
+    if worker_task is not None:
+        worker_task.cancel()
+        try:
+            await worker_task
+        except asyncio.CancelledError:
+            pass
 
 
 settings = get_settings()
@@ -59,7 +72,7 @@ def root_index():
                 {"method": "GET", "path": "/v1/auth/github/start", "description": "Initiate GitHub OAuth with PKCE"},
                 {"method": "GET", "path": "/v1/auth/github/callback", "description": "GitHub OAuth callback & session creation"},
                 {"method": "POST", "path": "/v1/auth/logout", "description": "Terminate active session"},
-                {"method": "GET", "path": "/v1/me", "description": "Get current authenticated user & org"}
+                {"method": "GET", "path": "/v1/auth/me", "description": "Get current authenticated user & org"}
             ],
             "webhooks": [
                 {"method": "POST", "path": "/v1/webhooks/github", "description": "Intake signed GitHub pull request events"}
@@ -85,4 +98,5 @@ app.include_router(policies_router)
 app.include_router(team_router)
 app.include_router(webhooks_router)
 app.include_router(reviews_router)
+app.include_router(analytics_router)
 app.include_router(logs_router)

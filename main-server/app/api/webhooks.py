@@ -94,14 +94,20 @@ async def github_webhook(
     db.add(job)
     await db.commit()
 
-    # 3. Enqueue review job into Redis
+    # 3. Enqueue immediately - the diff fetch and the review itself happen in
+    # the worker, never inside this request. GitHub expects a webhook ACK
+    # within ~10s; the review (diff fetch + regex scan + optional LLM pass +
+    # RAG lookups + posting the result comment) can legitimately take much
+    # longer than that, especially on a large PR or a slow LLM provider.
     job_payload = {
         "job_id": job.id,
         "organization_id": inst.organization_id,
         "repository_id": repo.id,
         "pr_number": pr_number,
         "commit_sha": commit_sha,
-        "code_content": "",  # Worker will fetch PR diff or content
+        "is_diff": True,
+        "repo_full_name": repo_name,
+        "installation_id": gh_install_id,
     }
     await enqueue_review_job(job_payload)
 

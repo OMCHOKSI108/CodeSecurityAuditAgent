@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.schemas import FindingItem, ManualReviewRequest, ReviewDetailResponse
+from app.db.models.github import Repository
 from app.db.models.review import Finding, Review, ReviewJob
 from app.db.session import get_db
 from app.jobs.queue import enqueue_review_job
@@ -54,10 +55,25 @@ async def get_review_detail(
     tenant: TenantContext = Depends(get_tenant_context),
     db: AsyncSession = Depends(get_db),
 ):
-    stmt = select(Review).where(Review.id == review_id, Review.organization_id == tenant.organization.id)
-    review = (await db.execute(stmt)).scalar_one_or_none()
+    if review_id.isdigit():
+        stmt = (
+            select(Review)
+            .where(
+                Review.organization_id == tenant.organization.id,
+                (Review.id == review_id) | (Review.pr_number == int(review_id)),
+            )
+            .order_by(Review.created_at.desc())
+        )
+    else:
+        stmt = select(Review).where(Review.id == review_id, Review.organization_id == tenant.organization.id)
+
+    review = (await db.execute(stmt)).scalars().first()
     if not review:
         raise HTTPException(status_code=404, detail="Review not found")
+
+    repo_stmt = select(Repository).where(Repository.id == review.repository_id)
+    repo = (await db.execute(repo_stmt)).scalar_one_or_none()
+    repo_name = repo.full_name if repo else review.repository_id
 
     finding_stmt = select(Finding).where(Finding.review_id == review.id)
     findings = (await db.execute(finding_stmt)).scalars().all()
@@ -65,6 +81,7 @@ async def get_review_detail(
     finding_items = [
         FindingItem(
             id=f.id,
+            review_id=f.review_id,
             cwe_id=f.cwe_id,
             severity=f.severity,
             title=f.title,
@@ -72,13 +89,14 @@ async def get_review_detail(
             line_number=f.line_number,
             code_snippet=f.code_snippet,
             suggested_fix=f.suggested_fix,
+            status=getattr(f, "status", None) or "open",
         )
         for f in findings
     ]
 
     return ReviewDetailResponse(
         id=review.id,
-        repository_id=review.repository_id,
+        repository_id=repo_name,
         pr_number=review.pr_number,
         commit_sha=review.commit_sha,
         risk_score=review.risk_score,

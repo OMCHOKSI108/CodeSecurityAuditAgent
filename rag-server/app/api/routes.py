@@ -1,7 +1,9 @@
 """RAG Server API route definitions."""
 
 import logging
+
 from fastapi import APIRouter, Depends, HTTPException, status
+
 from app.api.schemas import (
     HealthResponse,
     IndexRequest,
@@ -13,7 +15,11 @@ from app.api.schemas import (
 )
 from app.core.config import get_settings
 from app.core.security import verify_internal_token
-from app.embeddings.model import get_embedding_manager
+from app.embeddings.model import (
+    EmbeddingAPIError,
+    EmbeddingNotConfigured,
+    get_embedding_manager,
+)
 from app.indexing.corpus import index_chunks, load_corpus_from_url
 from app.retrieval.qdrant_client import QdrantStore
 
@@ -23,7 +29,11 @@ router = APIRouter()
 
 def _get_qdrant() -> QdrantStore:
     settings = get_settings()
-    return QdrantStore(settings.qdrant_url, settings.rag_collection_name)
+    return QdrantStore(
+        settings.qdrant_url,
+        settings.rag_collection_name,
+        api_key=settings.qdrant_api_key,
+    )
 
 
 @router.get("/health/live")
@@ -39,7 +49,7 @@ def health_ready():
 
     qdrant_ok = qdrant.is_healthy()
     qdrant_status = "connected" if qdrant_ok else "unreachable"
-    model_status = "ready" if embed.is_ready else "not_loaded"
+    model_status = "ready" if embed.is_ready else "not_configured"
 
     if not qdrant_ok:
         raise HTTPException(
@@ -76,9 +86,21 @@ def search(req: SearchRequest):
             top_k=req.top_k,
             results=[SearchResultItem(**r) for r in results],
         )
-    except Exception as e:
-        logger.error(f"Search failed: {e}")
-        raise HTTPException(status_code=500, detail="Search failed")
+    except EmbeddingNotConfigured as exc:
+        logger.warning("Search unavailable: %s", exc)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(exc),
+        ) from exc
+    except EmbeddingAPIError as exc:
+        logger.error("Embedding provider error: %s", exc)
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Embedding provider request failed",
+        ) from exc
+    except Exception as exc:
+        logger.error("Search failed: %s", exc)
+        raise HTTPException(status_code=500, detail="Search failed") from exc
 
 
 @router.post("/v1/index", status_code=202, dependencies=[Depends(verify_internal_token)])
@@ -91,11 +113,28 @@ def trigger_index(req: IndexRequest):
             chunks = chunks[: req.max_documents]
         embed = get_embedding_manager(settings.rag_embedding_model)
         qdrant = _get_qdrant()
-        indexed = index_chunks(qdrant, embed, chunks)
+        indexed = index_chunks(
+            qdrant,
+            embed,
+            chunks,
+            batch_size=settings.embedding_batch_size,
+        )
         return {"status": "indexed", "count": indexed}
-    except Exception as e:
-        logger.error(f"Indexing failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+    except EmbeddingNotConfigured as exc:
+        logger.warning("Indexing unavailable: %s", exc)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(exc),
+        ) from exc
+    except EmbeddingAPIError as exc:
+        logger.error("Indexing failed (embedding provider): %s", exc)
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Embedding provider request failed",
+        ) from exc
+    except Exception as exc:
+        logger.error("Indexing failed: %s", exc)
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
 
 
 @router.get("/v1/index/status", response_model=IndexStatusResponse, dependencies=[Depends(verify_internal_token)])

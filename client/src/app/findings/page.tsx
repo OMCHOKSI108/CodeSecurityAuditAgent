@@ -17,6 +17,10 @@ export default function FindingsPage() {
     fetchFindings().then(setFindings);
   }, []);
 
+  const criticalCount = findings.filter((f) => f.severity === "critical").length;
+  const highCount = findings.filter((f) => f.severity === "high").length;
+  const otherCount = findings.filter((f) => f.severity !== "critical" && f.severity !== "high").length;
+
   const filtered = useMemo(() => {
     return findings.filter((f) => {
       const matchSev =
@@ -39,30 +43,36 @@ export default function FindingsPage() {
       />
 
       {/* Action Banner */}
-      <div className="banner-alert">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="badge badge-critical">🔴 2 Critical</span>
-            <span className="badge badge-high">🟠 8 High</span>
-            <span className="text-dim text-xs">&bull; 13 Medium / Low</span>
+      {criticalCount > 0 ? (
+        <div className="banner-alert">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="badge badge-critical">🔴 {criticalCount} Critical</span>
+              {highCount > 0 && <span className="badge badge-high">🟠 {highCount} High</span>}
+              <span className="text-dim text-xs">&bull; {otherCount} Medium / Low</span>
+            </div>
+            <p className="text-xs text-main">
+              {criticalCount} critical vulnerability issue{criticalCount === 1 ? " is" : "s are"} currently gating production merges.
+            </p>
           </div>
-          <p className="text-xs text-main">
-            The 2 critical findings are currently blocking{" "}
-            <strong style={{ color: "var(--crit-color)" }}>
-              3 Pull Requests
-            </strong>{" "}
-            from merging into production branches.
-          </p>
-        </div>
 
-        <Button
-          variant="danger"
-          size="sm"
-          onClick={() => setSelectedSeverity("critical")}
-        >
-          Filter Critical Findings
-        </Button>
-      </div>
+          <Button
+            variant="danger"
+            size="sm"
+            onClick={() => setSelectedSeverity("critical")}
+          >
+            Filter Critical Findings ({criticalCount})
+          </Button>
+        </div>
+      ) : (
+        <div className="p-3.5 rounded-lg border text-xs flex items-center justify-between" style={{ backgroundColor: "var(--pass-bg)", borderColor: "var(--pass-border)", color: "var(--pass-color)" }}>
+          <div className="flex items-center gap-2">
+            <span>🛡️</span>
+            <span className="font-semibold">Zero Critical Findings: Clean security posture detected.</span>
+          </div>
+          <span className="text-muted text-[11px]">{findings.length} total monitored items</span>
+        </div>
+      )}
 
       {/* Filter Toolbar */}
       <div className="filter-bar flex-between">
@@ -103,7 +113,7 @@ export default function FindingsPage() {
         </div>
 
         <span className="text-xs text-dim">
-          Showing {filtered.length} findings
+          Showing {filtered.length} of {findings.length} findings
         </span>
       </div>
 
