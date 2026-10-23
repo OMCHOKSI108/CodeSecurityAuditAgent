@@ -71,7 +71,7 @@ export default function PRDetailPage() {
         </div>
 
         <a
-          href={`https://github.com/example/${pr.repository}/pull/${pr.pr_number}`}
+          href={`https://github.com/${pr.repository}/pull/${pr.pr_number}`}
           target="_blank"
           rel="noreferrer"
         >
