@@ -136,3 +136,18 @@ async def retry_review_job(job_id: str):
         }
         await enqueue_review_job(payload)
         return {"status": "re-enqueued", "job_id": job.id}
+
+
+@router.get("/health/metrics")
+async def health_system_metrics():
+    """Retrieve operational telemetry and engine readiness status."""
+    import time
+    settings = get_settings()
+    return {
+        "status": "operational",
+        "timestamp": int(time.time()),
+        "environment": settings.app_env,
+        "inline_worker": settings.run_worker_inline,
+        "pr_agent_enabled": settings.pr_agent_review_enabled,
+        "security_gate": "active",
+    }
