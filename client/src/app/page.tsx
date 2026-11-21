@@ -30,6 +30,7 @@ import { MetricCard } from "@/components/ui/MetricCard";
 import { Card } from "@/components/ui/Card";
 import { RepositoriesTable } from "@/components/repositories/RepositoriesTable";
 import { RecentPRsTable } from "@/components/dashboard/RecentPRsTable";
+import { DemoScreenshotsShowcase } from "@/components/home/DemoScreenshotsShowcase";
 
 const PR_AGENT_SKILLS = [
   {
@@ -628,6 +629,9 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* Interactive Demo Screenshots Showcase */}
+      <DemoScreenshotsShowcase />
 
       {/* Ragebait Reality Check Section */}
       <section style={{ maxWidth: "1050px", margin: "2.5rem auto 1rem", padding: "0 1.5rem", width: "100%" }}>
