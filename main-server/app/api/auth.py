@@ -230,6 +230,7 @@ async def login(
     db: AsyncSession = Depends(get_db),
 ):
     """Direct/workspace user login that ensures user, organization, membership and audit logging in Postgres."""
+    settings = get_settings()
     username = (payload.username or "").strip()
     if not username:
         raise HTTPException(status_code=400, detail="Username is required")
