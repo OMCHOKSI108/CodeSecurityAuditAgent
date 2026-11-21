@@ -457,14 +457,6 @@ export default function HomePage() {
         {/* Right Upper Corner: Theme Toggle & Strictly Sign in with GitHub */}
         <div className="landing-nav-actions">
           <ThemeToggle />
-          <button
-            onClick={handleDemoSignIn}
-            className="btn btn-secondary btn-sm"
-            title="Instant Demo Access"
-            style={{ fontFamily: "var(--font-mono)", fontSize: "0.75rem" }}
-          >
-            Demo Access
-          </button>
           <a href="/api/auth/github/start">
             <Button
               variant="primary"
