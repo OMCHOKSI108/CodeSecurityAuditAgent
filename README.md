@@ -8,7 +8,7 @@ CodeSecAudit AI acts like an AI senior engineer inside GitHub pull requests, det
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688)](https://fastapi.tiangolo.com/)
 [![Docker](https://img.shields.io/badge/Docker-compose-2496ED)](https://docs.docker.com/compose/)
 [![Hugging Face Dataset](https://img.shields.io/badge/HF-Dataset-FFD21E)](https://huggingface.co/datasets/OMCHOKSI108/CodeSecAudit-RAG)
-[![Hugging Face Space](https://img.shields.io/badge/HF-RAG%20Service-FFD21E)](https://OMCHOKSI108-codereview-agent.hf.space)
+[![RAG Service](https://img.shields.io/badge/Render-RAG%20Service-46E3B7)](https://codesec-rag.onrender.com)
 [![Kaggle](https://img.shields.io/badge/Kaggle-Notebook-20BEFF)](https://www.kaggle.com/code/omchoksi04/codereview)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
@@ -18,15 +18,14 @@ CodeSecAudit AI acts like an AI senior engineer inside GitHub pull requests, det
 
 | Asset | Link |
 |---|---|
-| Kaggle Notebook | https://www.kaggle.com/code/omchoksi04/codereview |
-| Hugging Face Dataset | https://huggingface.co/datasets/OMCHOKSI108/CodeSecAudit-RAG |
-| RAG Service (live) | https://OMCHOKSI108-codereview-agent.hf.space |
+| Frontend (Client) | https://codesec-client.onrender.com |
+| Backend (API) | https://codesec-main.onrender.com |
+| RAG Service | https://codesec-rag.onrender.com |
 | GitHub Repo | https://github.com/OMCHOKSI108/CodeSecurityAuditAgent |
 | Live PR Evaluation (CVSS 9.89) | https://github.com/OMCHOKSI108/CodeSecurityAuditAgent/pull/9 |
 | GitHub App | https://github.com/apps/codesecaudit-ai |
-| App (Client) | https://codesec-client.onrender.com |
-| API (main-server) | https://codesec-main.onrender.com |
-| RAG Service | https://codesec-rag.onrender.com |
+| Kaggle Notebook | https://www.kaggle.com/code/omchoksi04/codereview |
+| Hugging Face Dataset | https://huggingface.co/datasets/OMCHOKSI108/CodeSecAudit-RAG |
 
 ---
 
@@ -294,9 +293,9 @@ Full documentation: [docs/github_action.md](docs/github_action.md)
 
 ## RAG Service
 
-The RAG retrieval service runs as a **separate Hugging Face Space** to keep the main deployment lightweight (~500 MB).
+The RAG retrieval service runs on Render:
 
-**Live endpoint**: https://OMCHOKSI108-codereview-agent.hf.space
+**Live endpoint**: https://codesec-rag.onrender.com
 
 | Endpoint | Method | Description |
 |---|---|---|
@@ -308,7 +307,7 @@ The RAG retrieval service runs as a **separate Hugging Face Space** to keep the 
 ```env
 CODESEC_ENABLE_RAG=true
 CODESEC_RAG_MODE=remote
-CODESEC_RAG_SERVICE_URL=https://OMCHOKSI108-codereview-agent.hf.space
+CODESEC_RAG_SERVICE_URL=https://codesec-rag.onrender.com
 CODESEC_RAG_API_KEY=your-key-here
 ```
 
@@ -359,11 +358,11 @@ Full API reference with request/response examples: [docs/api_reference.md](docs/
 
 | Component | Host | Status |
 |---|---|---|
-| RAG Service | Hugging Face Space | **Live** |
-| API + Dashboard | Render / Railway | Planned |
-| Database | MongoDB Atlas | Designed |
-| Email | Resend | Designed |
-| GitHub App | GitHub Marketplace | Planned |
+| Frontend (Client) | Render (`https://codesec-client.onrender.com`) | **Live** |
+| Backend (API) | Render (`https://codesec-main.onrender.com`) | **Live** |
+| RAG Service | Render (`https://codesec-rag.onrender.com`) | **Live** |
+| Database | PostgreSQL 16 | **Live** |
+| GitHub App | GitHub App (`codesecaudit-ai`) | **Live** |
 
 See [docs/deployment_strategy.md](docs/deployment_strategy.md) and [docs/deployment_status.md](docs/deployment_status.md).
 
