@@ -13,6 +13,7 @@ import {
   TrendingUpIcon,
   GitHubIcon,
   CheckCircleIcon,
+  FileTextIcon,
 } from "@/components/ui/Icons";
 import { Button } from "@/components/ui/Button";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
@@ -233,7 +234,7 @@ export default function HomePage() {
                   <span className="text-xs font-mono text-muted">GitHub App Integration</span>
                 </div>
                 <h2 className="text-xl font-extrabold text-main mb-1.5 tracking-tight">
-                  ⚡ Install the CodeSecAudit GitHub App
+                  Install the CodeSecAudit GitHub App
                 </h2>
                 <p className="text-xs text-muted leading-relaxed">
                   Connect your repositories to start receiving autonomous PR security audits. Once installed, every pull request is checked automatically against OWASP rules.
@@ -435,7 +436,9 @@ export default function HomePage() {
       {/* Top Navbar strictly featuring Sign in with GitHub on right upper corner */}
       <header className="landing-nav">
         <div className="landing-nav-brand">
-          <span className="logo-badge">🛡️</span>
+          <span className="logo-badge" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+            <ShieldIcon size={18} />
+          </span>
           <div>
             <span className="logo-text">CodeSecAudit AI</span>
             <span
@@ -460,7 +463,7 @@ export default function HomePage() {
             title="Instant Demo Access"
             style={{ fontFamily: "var(--font-mono)", fontSize: "0.75rem" }}
           >
-            ⚡ Demo Access
+            Demo Access
           </button>
           <a href="/api/auth/github/start">
             <Button
@@ -479,8 +482,8 @@ export default function HomePage() {
       {/* Hero Section with Punchy Ragebait Hooks */}
       <section className="landing-hero">
         <div className="landing-hero-pill" style={{ borderColor: "rgba(239, 68, 68, 0.4)", color: "var(--crit-color)" }}>
-          <span>🚨</span>
-          <span>STILL TRUSTING &ldquo;LGTM 👍&rdquo;? ENJOY YOUR 3 AM BREACH NOTIFICATION.</span>
+          <AlertTriangleIcon size={14} className="shrink-0" />
+          <span>STILL TRUSTING UNVERIFIED PRs? PREVENT ZERO-DAY REGRESSIONS BEFORE MERGE.</span>
         </div>
 
         <h1 className="landing-hero-title">
@@ -526,7 +529,7 @@ export default function HomePage() {
             className="font-mono text-xs"
             style={{ border: "1px dashed var(--border-light)" }}
           >
-            ⚡ Instant Workspace Demo
+            Instant Workspace Demo
           </Button>
         </div>
 
@@ -664,16 +667,20 @@ export default function HomePage() {
         
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "1.25rem", marginTop: "1.5rem" }}>
           <div className="card" style={{ borderColor: "var(--border-subtle)" }}>
-            <span style={{ fontSize: "1.5rem", display: "block", marginBottom: "0.5rem" }}>😴</span>
+            <span style={{ display: "inline-flex", marginBottom: "0.5rem" }}>
+              <AlertTriangleIcon size={24} className="text-amber-500" />
+            </span>
             <span className="badge badge-warning mb-2">THE TIRED SENIOR DEV</span>
-            <h3 className="text-sm font-bold text-main mb-1.5">&ldquo;LGTM, ship it! 🚀&rdquo;</h3>
+            <h3 className="text-sm font-bold text-main mb-1.5">&ldquo;LGTM, ship it!&rdquo;</h3>
             <p className="text-xs text-muted leading-relaxed">
               Glanced at an 800-line diff on Friday at 5:42 PM. Scrolled to the bottom in 8 seconds, approved it to beat weekend traffic, and accidentally authorized remote code execution.
             </p>
           </div>
 
           <div className="card" style={{ borderColor: "var(--border-subtle)" }}>
-            <span style={{ fontSize: "1.5rem", display: "block", marginBottom: "0.5rem" }}>🐇</span>
+            <span style={{ display: "inline-flex", marginBottom: "0.5rem" }}>
+              <FileTextIcon size={24} className="text-blue-500" />
+            </span>
             <span className="badge badge-low mb-2">THE FLUFF AI REVIEWER</span>
             <h3 className="text-sm font-bold text-main mb-1.5">&ldquo;Consider renaming variable `x` to `counter`&rdquo;</h3>
             <p className="text-xs text-muted leading-relaxed">
@@ -682,7 +689,9 @@ export default function HomePage() {
           </div>
 
           <div className="card" style={{ borderColor: "var(--accent)", backgroundColor: "var(--accent-glow)" }}>
-            <span style={{ fontSize: "1.5rem", display: "block", marginBottom: "0.5rem" }}>🛡️</span>
+            <span style={{ display: "inline-flex", marginBottom: "0.5rem" }}>
+              <ShieldCheckIcon size={24} className="text-emerald-500" />
+            </span>
             <span className="badge badge-passed mb-2">CODESECAUDIT AI</span>
             <h3 className="text-sm font-bold text-main mb-1.5">Zero Fluff. Cold, Mathematical CVSS Blocking.</h3>
             <p className="text-xs text-muted leading-relaxed">

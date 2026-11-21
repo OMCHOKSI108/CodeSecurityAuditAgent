@@ -6,7 +6,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge, GateBadge } from "@/components/ui/Badge";
-import { GitHubIcon } from "@/components/ui/Icons";
+import { GitHubIcon, ShieldCheckIcon } from "@/components/ui/Icons";
 import { DataTable, Column } from "@/components/ui/DataTable";
 import { fetchMe, fetchPullRequests, deleteAccount } from "@/lib/api";
 import { UserProfile, PullRequest } from "@/types";
@@ -40,7 +40,7 @@ export default function SettingsPage() {
 
   const handleDeleteAccount = async () => {
     const confirmed = window.confirm(
-      "⚠️ PERMANENT ACCOUNT DELETION\n\nAre you sure you want to delete your account?\n\nThis will:\n1. Wipe out your account and all audit history completely.\n2. Automatically uninstall the CodeSecAudit GitHub App from your GitHub account.\n3. Delete all stored PR reviews, findings, and repository associations.\n\nThis action cannot be undone."
+      "PERMANENT ACCOUNT DELETION\n\nAre you sure you want to delete your account?\n\nThis will:\n1. Wipe out your account and all audit history completely.\n2. Automatically uninstall the CodeSecAudit GitHub App from your GitHub account.\n3. Delete all stored PR reviews, findings, and repository associations.\n\nThis action cannot be undone."
     );
     if (!confirmed) return;
     setDeleting(true);
@@ -182,7 +182,7 @@ export default function SettingsPage() {
                 fontSize: "1.2rem",
               }}
             >
-              🛡️
+              <ShieldCheckIcon size={20} className="text-emerald-500" />
             </div>
             <div>
               <div className="font-bold text-sm text-main flex items-center gap-2">

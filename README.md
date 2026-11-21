@@ -4,12 +4,17 @@ Enterprise AI Pull Request Reviewer for Security, Code Quality, and RAG-based Se
 
 CodeSecAudit AI acts like an AI senior engineer inside GitHub pull requests, detecting risky code, posting inline comments, suggesting fixes, and tracking review analytics before code is merged.
 
-[![Python](https://img.shields.io/badge/Python-3.11+-blue)](https://www.python.org/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688)](https://fastapi.tiangolo.com/)
-[![Docker](https://img.shields.io/badge/Docker-compose-2496ED)](https://docs.docker.com/compose/)
-[![Hugging Face Dataset](https://img.shields.io/badge/HF-Dataset-FFD21E)](https://huggingface.co/datasets/OMCHOKSI108/CodeSecAudit-RAG)
-[![RAG Service](https://img.shields.io/badge/Render-RAG%20Service-46E3B7)](https://codesec-rag.onrender.com)
-[![Kaggle](https://img.shields.io/badge/Kaggle-Notebook-20BEFF)](https://www.kaggle.com/code/omchoksi04/codereview)
+[![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=flat&logo=python&logoColor=white)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688?style=flat&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![Next.js](https://img.shields.io/badge/Next.js-14-000000?style=flat&logo=nextdotjs&logoColor=white)](https://nextjs.org/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?style=flat&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![Redis](https://img.shields.io/badge/Redis-7-DC382D?style=flat&logo=redis&logoColor=white)](https://redis.io/)
+[![Qdrant](https://img.shields.io/badge/Qdrant-Vector%20DB-DC2626?style=flat&logo=qdrant&logoColor=white)](https://qdrant.tech/)
+[![Docker](https://img.shields.io/badge/Docker-compose-2496ED?style=flat&logo=docker&logoColor=white)](https://docs.docker.com/compose/)
+[![Render](https://img.shields.io/badge/Render-Live-46E3B7?style=flat&logo=render&logoColor=white)](https://codesec-client.onrender.com)
+[![Hugging Face Dataset](https://img.shields.io/badge/HF-Dataset-FFD21E?style=flat&logo=huggingface&logoColor=black)](https://huggingface.co/datasets/OMCHOKSI108/CodeSecAudit-RAG)
+[![Kaggle](https://img.shields.io/badge/Kaggle-Notebook-20BEFF?style=flat&logo=kaggle&logoColor=white)](https://www.kaggle.com/code/omchoksi04/codereview)
+[![GitHub App](https://img.shields.io/badge/GitHub-App-181717?style=flat&logo=github&logoColor=white)](https://github.com/apps/codesecaudit-ai)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 ---
@@ -136,7 +141,7 @@ CodeSecAudit AI addresses all four: automated detection with OWASP-aligned rules
 ```mermaid
 flowchart TD
     subgraph GitHub ["GitHub Infrastructure"]
-        Dev["👨‍💻 Developer"] -->|1. Opens/Updates PR| PR["Pull Request"]
+        Dev["Developer"] -->|1. Opens/Updates PR| PR["Pull Request"]
         PR -->|2. Webhook Event: pull_request.opened / synchronize| Hook["Webhook Dispatcher"]
         CheckRun["GitHub Check Run (Gate Status)"] -.->|Fails / Blocks Merge| PR
         Comment["PR Inline & Summary Comments"] -.->|Remediation Guide & Diff Fix| PR
@@ -179,7 +184,7 @@ flowchart TD
     end
 
     subgraph WebDashboard ["Real-Time Dashboard & User Control"]
-        User["🛡️ User / Auditor"] -->|PKCE GitHub OAuth| WebClient["Next.js Web Client"]
+        User["Auditor / User"] -->|PKCE GitHub OAuth| WebClient["Next.js Web Client"]
         WebClient -->|View PR Audits, CVSS Risk & Deep Dives| PostgresDB
         WebClient -->|1-Click Account Deletion & Uninstall| DeleteAPI["DELETE /v1/auth/account"]
         DeleteAPI -->|Wipes All Data & Uninstalls App| GitHub

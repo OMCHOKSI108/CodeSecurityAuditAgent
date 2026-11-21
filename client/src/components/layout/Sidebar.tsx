@@ -89,7 +89,9 @@ export function Sidebar({ user: propUser, onSignOut, isOpen, onClose }: SidebarP
     <aside className={`app-sidebar ${isOpen ? "mobile-open" : ""}`}>
       <div className="sidebar-header" style={{ justifyContent: "space-between" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-          <span className="logo-badge">🛡️</span>
+          <span className="logo-badge" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+            <ShieldIcon size={18} />
+          </span>
           <div>
             <div className="logo-text">CodeSecAudit AI</div>
             <div style={{ fontSize: "0.75rem", color: "var(--text-dim)", fontFamily: "var(--font-mono)" }}>PR Security Gate</div>
@@ -139,7 +141,7 @@ export function Sidebar({ user: propUser, onSignOut, isOpen, onClose }: SidebarP
 
         <div style={{ display: "flex", alignItems: "center", gap: "0.65rem", paddingTop: "0.5rem", borderTop: "1px solid var(--border-subtle)" }}>
           <div style={{ width: "28px", height: "28px", borderRadius: "50%", background: "var(--bg-surface-hover)", border: "1px solid var(--border-light)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.8rem", color: "var(--text-main)" }}>
-            🛡️
+            <ShieldIcon size={14} />
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: "0.8rem", fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "var(--text-main)" }}>{orgName}</div>
