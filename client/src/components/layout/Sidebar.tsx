@@ -53,10 +53,10 @@ const NAV_GROUPS: { group: string; items: NavLinkItem[] }[] = [
       { name: "Team", href: "/team", icon: <UsersIcon size={16} /> },
       { name: "Settings", href: "/settings", icon: <SettingsIcon size={16} /> },
       { name: "Integrations", href: "/integrations", icon: <PlugIcon size={16} /> },
-      { name: "Admin Logs", href: "/admin/logs", icon: <TerminalIcon size={16} /> },
     ],
   },
 ];
+
 
 interface SidebarProps {
   user?: UserProfile | null;

@@ -28,9 +28,6 @@ export default function TeamPage() {
   // Invite modal state
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
-  const [inviteRole, setInviteRole] = useState<
-    "Developer" | "Security Lead" | "Viewer"
-  >("Developer");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [generatedInvite, setGeneratedInvite] = useState<TeamInvitation | null>(null);
 
@@ -75,7 +72,6 @@ export default function TeamPage() {
 
   const handleOpenModal = () => {
     setInviteEmail("");
-    setInviteRole("Developer");
     setGeneratedInvite(null);
     setShowInviteModal(true);
   };
@@ -92,22 +88,19 @@ export default function TeamPage() {
 
     setIsSubmitting(true);
     try {
-      const result = await inviteTeamMember(cleanEmail, inviteRole);
+      const result = await inviteTeamMember(cleanEmail, "member");
       if (result) {
         setGeneratedInvite(result);
         setInvitations((prev) => [result, ...prev]);
-        showToast(`Invitation sent to ${cleanEmail} as ${inviteRole}.`, "success");
+        showToast(`Invitation generated for ${cleanEmail}.`, "success");
       } else {
-        // Fallback local invitation state if backend fails
         const fallbackInvite: TeamInvitation = {
           id: `inv_${Date.now()}`,
           email: cleanEmail,
-          role: inviteRole,
+          role: "member",
           invited_by: "Admin",
           created_at: new Date().toISOString(),
-          invite_link: `https://codesec.ai/invite/${Date.now()}?email=${encodeURIComponent(
-            cleanEmail
-          )}`,
+          invite_link: `https://codesec-client.onrender.com/invite/accept?email=${encodeURIComponent(cleanEmail)}`,
         };
         setGeneratedInvite(fallbackInvite);
         setInvitations((prev) => [fallbackInvite, ...prev]);
@@ -188,11 +181,22 @@ export default function TeamPage() {
       render: (m) => (
         <div className="flex items-center gap-3">
           <div
-            className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 border"
             style={{
+              width: "32px",
+              height: "32px",
+              minWidth: "32px",
+              minHeight: "32px",
+              borderRadius: "50%",
+              overflow: "hidden",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: "12px",
+              fontWeight: "bold",
               backgroundColor: "rgba(56, 189, 248, 0.15)",
               color: "var(--accent)",
-              borderColor: "rgba(56, 189, 248, 0.3)",
+              border: "1px solid rgba(56, 189, 248, 0.3)",
+              flexShrink: 0,
             }}
           >
             {m.avatar_url ? (
@@ -200,7 +204,13 @@ export default function TeamPage() {
               <img
                 src={m.avatar_url}
                 alt={m.name}
-                className="w-full h-full rounded-full object-cover"
+                style={{
+                  width: "32px",
+                  height: "32px",
+                  borderRadius: "50%",
+                  objectFit: "cover",
+                  display: "block",
+                }}
               />
             ) : (
               m.name.charAt(0).toUpperCase()
@@ -215,19 +225,9 @@ export default function TeamPage() {
     },
     {
       key: "role",
-      header: "RBAC Role",
-      render: (m) => (
-        <Badge
-          variant={
-            m.role === "Admin"
-              ? "critical"
-              : m.role === "Security Lead"
-              ? "low"
-              : "passed"
-          }
-        >
-          {m.role}
-        </Badge>
+      header: "Status",
+      render: () => (
+        <Badge variant="passed">Connected</Badge>
       ),
     },
     {
@@ -254,27 +254,13 @@ export default function TeamPage() {
       header: "Last Active",
       render: (m) => <span className="text-xs text-dim">{m.last_active}</span>,
     },
-    {
-      key: "actions",
-      header: "",
-      align: "right",
-      render: (m) => (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => showToast(`Role settings for ${m.name} are managed by Account Owner.`, "info")}
-        >
-          Edit Role
-        </Button>
-      ),
-    },
   ];
 
   return (
     <div className="space-y">
       <PageHeader
-        title="Team & Access Controls"
-        subtitle="Manage organization members, RBAC permissions, and team access invitations."
+        title="Team Collaborators"
+        subtitle="Connected members who share repository access and pull request security reviews."
         badge={
           <div className="flex items-center gap-2">
             <span className="crumb-badge text-xs">
@@ -296,7 +282,7 @@ export default function TeamPage() {
         }
         actions={
           <Button variant="primary" size="md" onClick={handleOpenModal}>
-            + Invite Member
+            + Invite Collaborator
           </Button>
         }
       />
@@ -345,7 +331,7 @@ export default function TeamPage() {
         title={
           <div className="flex items-center gap-2">
             <UsersIcon size={18} className="text-accent" />
-            <span>Active Team Members ({members.length})</span>
+            <span>Connected Collaborators ({members.length})</span>
           </div>
         }
         description="Users authenticated with authorized access to repository scan results and policy gates."
@@ -369,7 +355,7 @@ export default function TeamPage() {
         title={
           <div className="flex items-center gap-2">
             <ShieldCheckIcon size={18} className="text-warning" />
-            <span>Pending Organization Invitations ({invitations.length})</span>
+            <span>Pending Invitations ({invitations.length})</span>
           </div>
         }
         description="Invited colleagues awaiting account setup or GitHub association."
@@ -405,7 +391,7 @@ export default function TeamPage() {
                   style={{ borderColor: "var(--border-subtle)" }}
                 >
                   <th className="py-2.5 px-3">Invited Email</th>
-                  <th className="py-2.5 px-3">Assigned Role</th>
+                  <th className="py-2.5 px-3">Status</th>
                   <th className="py-2.5 px-3">Invited By</th>
                   <th className="py-2.5 px-3">Date Sent</th>
                   <th className="py-2.5 px-3 text-right">Actions</th>
@@ -425,17 +411,7 @@ export default function TeamPage() {
                         {inv.email}
                       </td>
                       <td className="py-3 px-3">
-                        <Badge
-                          variant={
-                            inv.role === "Admin"
-                              ? "critical"
-                              : inv.role === "Security Lead"
-                              ? "low"
-                              : "passed"
-                          }
-                        >
-                          {inv.role}
-                        </Badge>
+                        <Badge variant="warning">Pending</Badge>
                       </td>
                       <td className="py-3 px-3 text-dim">
                         {inv.invited_by || "Admin"}
@@ -511,10 +487,10 @@ export default function TeamPage() {
               <>
                 <div className="mb-4">
                   <h2 className="text-base font-bold text-main">
-                    Invite New Team Member
+                    Invite Collaborator
                   </h2>
                   <p className="text-xs text-muted mt-1">
-                    Send an invitation link with granular RBAC permissions.
+                    Send an invitation link so your colleague can connect and share PR security reviews.
                   </p>
                 </div>
 
@@ -526,37 +502,13 @@ export default function TeamPage() {
                     <input
                       type="email"
                       required
-                      placeholder="developer@company.com"
+                      placeholder="colleague@company.com"
                       value={inviteEmail}
                       onChange={(e) => setInviteEmail(e.target.value)}
                       className="form-input w-full text-xs"
                       disabled={isSubmitting}
                       autoFocus
                     />
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-semibold text-muted block mb-1.5">
-                      Role &amp; Permissions
-                    </label>
-                    <select
-                      value={inviteRole}
-                      onChange={(e) =>
-                        setInviteRole(e.target.value as any)
-                      }
-                      className="form-input w-full text-xs"
-                      disabled={isSubmitting}
-                    >
-                      <option value="Developer">
-                        Developer (View findings, resolve code alerts)
-                      </option>
-                      <option value="Security Lead">
-                        Security Lead (Override gate blocks, configure policies)
-                      </option>
-                      <option value="Viewer">
-                        Viewer (Read-only access to audit reports)
-                      </option>
-                    </select>
                   </div>
 
                   <div className="flex justify-end gap-2 pt-3 border-t" style={{ borderColor: "var(--border-subtle)" }}>
@@ -581,7 +533,7 @@ export default function TeamPage() {
                           Sending...
                         </>
                       ) : (
-                        "Send Invitation"
+                        "Create Invitation"
                       )}
                     </Button>
                   </div>
@@ -608,8 +560,7 @@ export default function TeamPage() {
                       Invitation created for{" "}
                       <span className="text-main font-semibold">
                         {generatedInvite.email}
-                      </span>{" "}
-                      ({generatedInvite.role})
+                      </span>
                     </p>
                   </div>
                 </div>

@@ -1,11 +1,13 @@
 "use client";
 
 import React, { useEffect, useState, useMemo } from "react";
+import Link from "next/link";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { MetricCard } from "@/components/ui/MetricCard";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
-import { AnalyticsTrends } from "@/types";
+import { Button } from "@/components/ui/Button";
+import { AnalyticsTrends, Finding } from "@/types";
 import { fetchAnalyticsTrends, fetchFindings } from "@/lib/api";
 import {
   TrendingUpIcon,
@@ -20,6 +22,7 @@ type TelemetryTab = "all" | "cvss" | "risk" | "mttr";
 
 export default function TrendsPage() {
   const [trends, setTrends] = useState<AnalyticsTrends | null>(null);
+  const [findings, setFindings] = useState<Finding[]>([]);
   const [loading, setLoading] = useState(true);
   const [timeRange, setTimeRange] = useState<TimeRange>("90D");
   const [activeTab, setActiveTab] = useState<TelemetryTab>("all");
@@ -27,100 +30,149 @@ export default function TrendsPage() {
   const [hoveredPoint, setHoveredPoint] = useState<number | null>(null);
 
   useEffect(() => {
-    fetchAnalyticsTrends()
-      .then(setTrends)
+    Promise.all([fetchAnalyticsTrends(), fetchFindings()])
+      .then(([t, f]) => {
+        setTrends(t);
+        setFindings(f);
+      })
       .finally(() => setLoading(false));
   }, []);
 
+  const secScore = trends?.security_score ?? 100;
+  const criticalCount = trends?.critical_active ?? findings.filter((f) => f.severity === "critical").length;
+  const passedCount = trends?.gate_verdicts?.passed_count ?? 0;
+  const blockedCount = trends?.gate_verdicts?.blocked_count ?? 0;
+  const passedPct = trends?.gate_verdicts?.passed_pct ?? 0;
+  const currentMttr = trends?.mttr_hours ?? 0;
+
+  const hasData = useMemo(() => {
+    if (loading) return true;
+    const totalVerdicts = passedCount + blockedCount;
+    return totalVerdicts > 0 || findings.length > 0;
+  }, [loading, passedCount, blockedCount, findings]);
+
   // Time-window adjusted progression data
   const scoreProgression = useMemo(() => {
-    const raw = trends?.score_progression || [
-      { month: "May", score: 72 },
-      { month: "Jun", score: 78 },
-      { month: "Jul", score: 81 },
-      { month: "Aug", score: 85 },
-      { month: "Sep", score: 91 },
-      { month: "Oct", score: trends?.security_score ?? 94 },
-    ];
+    const raw = trends?.score_progression && trends.score_progression.length > 0
+      ? trends.score_progression
+      : [{ month: "Current", score: secScore }];
     if (timeRange === "30D") return raw.slice(-2);
     if (timeRange === "90D") return raw.slice(-3);
     if (timeRange === "6M") return raw.slice(-6);
     return raw;
-  }, [trends, timeRange]);
+  }, [trends, timeRange, secScore]);
 
   // CVSS Distribution telemetry
   const cvssDistribution = useMemo(() => {
+    const crit = findings.filter((f) => f.severity === "critical").length;
+    const hi = findings.filter((f) => f.severity === "high").length;
+    const med = findings.filter((f) => f.severity === "medium").length;
+    const low = findings.filter((f) => f.severity === "low").length;
     return [
       {
         tier: "Critical",
         range: "9.0 - 10.0",
-        count: trends?.critical_active ? Math.max(1, trends.critical_active) : 2,
+        count: crit,
         color: "var(--crit-color)",
         bg: "rgba(239, 68, 68, 0.15)",
         borderColor: "rgba(239, 68, 68, 0.4)",
         sla: "< 24 hrs",
         vector: "Remote Network Execution, Auth Bypass",
-        mttrHours: trends?.mttr_hours ? Math.round(trends.mttr_hours * 0.7) : 4.2,
+        mttrHours: currentMttr,
       },
       {
         tier: "High",
         range: "7.0 - 8.9",
-        count: 5,
+        count: hi,
         color: "var(--warn-color)",
         bg: "rgba(245, 158, 11, 0.15)",
         borderColor: "rgba(245, 158, 11, 0.4)",
         sla: "< 7 days",
         vector: "Privilege Escalation, SQLi, Secrets in Code",
-        mttrHours: 16.5,
+        mttrHours: currentMttr ? Math.round(currentMttr * 2.2) : 0,
       },
       {
         tier: "Medium",
         range: "4.0 - 6.9",
-        count: 12,
+        count: med,
         color: "var(--accent)",
         bg: "rgba(56, 189, 248, 0.15)",
         borderColor: "rgba(56, 189, 248, 0.4)",
         sla: "< 30 days",
         vector: "CORS Misconfig, Path Traversal, Missing Headers",
-        mttrHours: 42.0,
+        mttrHours: currentMttr ? Math.round(currentMttr * 5.0) : 0,
       },
       {
         tier: "Low",
         range: "0.1 - 3.9",
-        count: 8,
+        count: low,
         color: "var(--text-muted)",
         bg: "rgba(148, 163, 184, 0.15)",
         borderColor: "rgba(148, 163, 184, 0.3)",
         sla: "Best Effort",
         vector: "Information Leakage, Verbose Debug Logs",
-        mttrHours: 78.0,
+        mttrHours: currentMttr ? Math.round(currentMttr * 8.0) : 0,
       },
     ];
-  }, [trends]);
+  }, [findings, currentMttr]);
 
-  // MTTR Curve points (past 6 months)
+  // MTTR Curve points
   const mttrCurveData = useMemo(() => {
     return [
-      { month: "May", critical: 18.2, high: 46.0, medium: 96.0 },
-      { month: "Jun", critical: 14.0, high: 38.0, medium: 84.0 },
-      { month: "Jul", critical: 10.5, high: 29.5, medium: 72.0 },
-      { month: "Aug", critical: 7.2, high: 22.0, medium: 58.0 },
-      { month: "Sep", critical: 5.1, high: 18.5, medium: 48.0 },
       {
-        month: "Oct",
-        critical: trends?.mttr_hours ?? 3.8,
-        high: 14.2,
-        medium: 36.0,
+        month: "Current",
+        critical: currentMttr,
+        high: currentMttr ? Math.round(currentMttr * 2.2) : 0,
+        medium: currentMttr ? Math.round(currentMttr * 5.0) : 0,
       },
     ];
-  }, [trends]);
+  }, [currentMttr]);
 
-  const secScore = trends?.security_score ?? 94;
-  const criticalCount = trends?.critical_active ?? 0;
-  const passedCount = trends?.gate_verdicts?.passed_count ?? 142;
-  const blockedCount = trends?.gate_verdicts?.blocked_count ?? 18;
-  const passedPct = trends?.gate_verdicts?.passed_pct ?? 88.8;
-  const currentMttr = trends?.mttr_hours ?? 3.8;
+  if (!loading && !hasData) {
+    return (
+      <div className="space-y">
+        <PageHeader
+          title="Visual Security Telemetry & Trends"
+          subtitle="Real-time CVSS telemetry distribution, MTTR remediation velocity curves, and automated gate enforcement analytics."
+        />
+        <div
+          className="p-12 text-center rounded-xl border"
+          style={{
+            backgroundColor: "var(--bg-surface)",
+            borderColor: "var(--border-subtle)",
+          }}
+        >
+          <div
+            style={{
+              width: "48px",
+              height: "48px",
+              borderRadius: "50%",
+              margin: "0 auto 12px auto",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              backgroundColor: "rgba(56, 189, 248, 0.15)",
+              color: "var(--accent)",
+              border: "1px solid rgba(56, 189, 248, 0.3)",
+            }}
+          >
+            <ActivityIcon size={24} />
+          </div>
+          <h3 className="text-sm font-bold text-main mb-1">
+            No Security Telemetry Recorded Yet
+          </h3>
+          <p className="text-xs text-muted max-w-md mx-auto mb-4">
+            Connect your repositories and run pull request security scans to start aggregating live CVSS distributions, remediation curves, and gate analytics.
+          </p>
+          <Link href="/dashboard">
+            <Button variant="primary" size="sm">
+              Go to Dashboard →
+            </Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y">

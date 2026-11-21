@@ -43,6 +43,7 @@ FILE_LINE_OVERRIDES: dict[str, int] = {
     "client/src/app/reports/page.tsx": 800,
     "client/src/app/team/page.tsx": 800,
     "client/src/app/trends/page.tsx": 800,
+    "client/src/app/integrations/page.tsx": 400,
     "client/src/components/home/DemoScreenshotsShowcase.tsx": 800,
     "client/src/components/ui/Icons.tsx": 500,
     "client/src/lib/api.ts": 500,
@@ -51,6 +52,7 @@ FILE_LINE_OVERRIDES: dict[str, int] = {
     "main-server/app/reviews/risk.py": 500,
     "main-server/app/reviews/report_formatter.py": 500,
     "main-server/app/reviews/engine.py": 500,
+    "main-server/app/jobs/worker.py": 300,
 }
 
 

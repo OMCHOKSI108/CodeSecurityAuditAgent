@@ -220,15 +220,26 @@ export default function ReportsPage() {
         }
       >
         <div
-          className="p-5 rounded-xl border relative overflow-hidden"
+          className="p-5 rounded-xl border"
           style={{
+            position: "relative",
+            overflow: "hidden",
             backgroundColor: "var(--bg-surface-elevated)",
             borderColor: "rgba(34, 197, 94, 0.3)",
           }}
         >
-          {/* Watermark badge icon */}
-          <div className="absolute right-4 top-4 opacity-10 pointer-events-none text-success">
-            <AwardIcon size={120} />
+          {/* Watermark badge icon anchored in background */}
+          <div
+            style={{
+              position: "absolute",
+              right: "16px",
+              top: "16px",
+              opacity: 0.06,
+              pointerEvents: "none",
+              color: "var(--pass-color)",
+            }}
+          >
+            <AwardIcon size={80} />
           </div>
 
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4 border-b pb-4" style={{ borderColor: "var(--border-subtle)" }}>
@@ -247,12 +258,23 @@ export default function ReportsPage() {
           </div>
 
           <p className="text-xs text-muted leading-relaxed mb-5">
-            This formal compliance document certifies that CodeSecAudit AI evaluated{" "}
-            <strong className="text-main">{report.prs_scanned} pull requests</strong> across{" "}
-            <strong className="text-main">{report.repos_scanned} microservices</strong> during {period}.
-            Automated policy gates enforced zero-tolerance controls against critical vulnerabilities,
-            unauthorized privilege escalations, and hardcoded secrets. All merging branches conformed to
-            enterprise compliance baselines before code deployment.
+            {report.prs_scanned > 0 ? (
+              <>
+                This formal compliance document certifies that CodeSecAudit AI evaluated{" "}
+                <strong className="text-main">{report.prs_scanned} pull requests</strong> across{" "}
+                <strong className="text-main">{report.repos_scanned} microservices</strong> during {period}.
+                Automated policy gates enforced zero-tolerance controls against critical vulnerabilities,
+                unauthorized privilege escalations, and hardcoded secrets. All merging branches conformed to
+                enterprise compliance baselines before code deployment.
+              </>
+            ) : (
+              <>
+                This formal compliance workspace monitors code security for{" "}
+                <strong className="text-main">{report.repos_scanned} repository</strong> during {period}.
+                No pull requests have been audited yet. Once you connect repositories and open PRs,
+                CodeSecAudit automated policy gates will verify branches against OWASP ASVS and SOC 2 baselines.
+              </>
+            )}
           </p>
 
           {/* Audit Verification Metadata Strip */}
@@ -263,11 +285,15 @@ export default function ReportsPage() {
             </div>
             <div className="p-2.5 rounded bg-[var(--bg-surface)] border border-[var(--border-subtle)]">
               <span className="text-[10px] text-dim block uppercase">Remediation Rate</span>
-              <span className="font-bold text-success text-sm">{resolutionRate}% Resolved</span>
+              <span className="font-bold text-success text-sm">
+                {report.prs_scanned > 0 ? `${resolutionRate}% Resolved` : "100% Clean"}
+              </span>
             </div>
             <div className="p-2.5 rounded bg-[var(--bg-surface)] border border-[var(--border-subtle)]">
               <span className="text-[10px] text-dim block uppercase">Critical MTTR</span>
-              <span className="font-bold text-main text-sm">{report.avg_remediation_hours.critical} Hours</span>
+              <span className="font-bold text-main text-sm">
+                {report.prs_scanned > 0 ? `${report.avg_remediation_hours.critical} Hours` : "0.0 Hours"}
+              </span>
             </div>
             <div className="p-2.5 rounded bg-[var(--bg-surface)] border border-[var(--border-subtle)]">
               <span className="text-[10px] text-dim block uppercase">Residual Risk</span>

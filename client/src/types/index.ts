@@ -92,7 +92,7 @@ export interface TeamMember {
   id: string;
   name: string;
   email: string;
-  role: "Admin" | "Security Lead" | "Developer" | "Viewer";
+  role: string;
   prs_reviewed: number;
   findings_resolved: number;
   last_active: string;
@@ -102,7 +102,7 @@ export interface TeamMember {
 export interface TeamInvitation {
   id: string;
   email: string;
-  role: "Admin" | "Security Lead" | "Developer" | "Viewer";
+  role: string;
   invited_by: string;
   created_at: string;
   invite_link: string;

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { Badge, GateBadge } from "@/components/ui/Badge";
+import { GateBadge } from "@/components/ui/Badge";
 import { GitHubIcon, ShieldCheckIcon } from "@/components/ui/Icons";
 import { DataTable, Column } from "@/components/ui/DataTable";
 import { fetchMe, fetchPullRequests, deleteAccount } from "@/lib/api";
@@ -291,43 +291,10 @@ export default function SettingsPage() {
             <input
               type="checkbox"
               checked={dailyDigest}
-              onChange={(e) => setEmailAlerts(e.target.checked)}
+              onChange={(e) => setDailyDigest(e.target.checked)}
               style={{ width: "16px", height: "16px", accentColor: "var(--accent)" }}
             />
           </label>
-        </div>
-      </Card>
-
-      {/* API Tokens */}
-      <Card
-        title="API Access Tokens"
-        description="Tokens for CI/CD pipelines and external CLI tools"
-        actions={
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => alert("Created token: csa_live_9f81a7b8e4c2")}
-          >
-            + Generate Token
-          </Button>
-        }
-      >
-        <div
-          className="p-3.5 rounded border flex-between text-xs"
-          style={{
-            backgroundColor: "var(--bg-surface-elevated)",
-            borderColor: "var(--border-subtle)",
-          }}
-        >
-          <div>
-            <span className="font-mono text-main block">
-              csa_live_********************481b
-            </span>
-            <span className="text-dim text-[11px]">
-              Created Oct 8, 2026 &bull; Full Audit Permissions
-            </span>
-          </div>
-          <Badge variant="passed">Active</Badge>
         </div>
       </Card>
 
@@ -353,20 +320,6 @@ export default function SettingsPage() {
               onClick={handleDeleteAccount}
             >
               {deleting ? "Deleting Account & Uninstalling..." : "Delete Account & Uninstall GitHub App"}
-            </Button>
-          </div>
-
-          <div className="flex items-center justify-between text-xs pt-2 border-t" style={{ borderColor: "var(--border-subtle)" }}>
-            <div>
-              <span className="font-semibold text-main block">Semantic Audit Cache</span>
-              <span className="text-dim text-[11px]">Force CodeSecAudit to rebuild vector index embeddings</span>
-            </div>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => alert("Semantic cache purged successfully.")}
-            >
-              Purge Cache
             </Button>
           </div>
         </div>
