@@ -32,7 +32,18 @@ CodeSecAudit AI acts like an AI senior engineer inside GitHub pull requests, det
 
 ## Screenshots
 
-### PR Review — Inline Comments 
+### Pull Request Security Reviews
+
+#### Severe PR Review — Merge Blocked (Critical/High Risk Vulnerabilities)
+Link : https://github.com/OMCHOKSI108/CodeSecurityAuditAgent/pull/9
+![Severe PR Review Blocked](docs/screenshots/github_pr_review_severe.png)
+*Automated PR gate blocking merge on critical security vulnerabilities with executive triage matrix and remediation guides*
+
+#### Healthy PR Review — Merge Allowed (Zero Vulnerabilities / Clean Diff)
+![Healthy PR Review Approved](docs/screenshots/github_pr_review_healthy.png)
+*Automated security audit approval for clean pull requests passing all OWASP Top 10 policies*
+
+### PR Review — Inline Comments
 Link : https://github.com/OMCHOKSI108/CodeSecurityAuditAgent/pull/4
 ![PR Review Bugs](docs/screenshots/github_pr_review_bugs.png)
 *Detected vulnerabilities with inline PR comments*
@@ -163,7 +174,7 @@ flowchart TD
         Block --> Formatter["Enterprise Markdown Formatter"]
         Warn --> Formatter
         Pass --> Formatter
-        Formatter -->|10. Post Check Run (conclusion: failure/success)| CheckRun
+        Formatter -->|10. Post Check Run - failure or success| CheckRun
         Formatter -->|11. Post In-Depth PR Comment| Comment
         Formatter -->|12. Persist Audit Record & Findings| PostgresDB[("PostgreSQL 16")]
     end
