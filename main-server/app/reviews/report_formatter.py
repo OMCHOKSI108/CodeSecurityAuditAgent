@@ -160,7 +160,8 @@ def format_pr_comment(
     badge = _VERDICT_BADGE.get(verdict, verdict)
     short_sha = commit_sha[:12] if commit_sha else "HEAD"
     try:
-        dashboard_url = get_settings().next_public_app_url.rstrip("/")
+        raw_url = get_settings().next_public_app_url.rstrip("/")
+        dashboard_url = raw_url if raw_url and "localhost" not in raw_url else "https://codesec-client.onrender.com"
     except Exception:
         dashboard_url = "https://codesec-client.onrender.com"
 
