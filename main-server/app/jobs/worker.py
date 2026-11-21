@@ -157,7 +157,8 @@ async def process_single_job(job_data: dict) -> None:
         # PR - no mail-sending code needed on our side.
         if repo_full_name and installation_id:
             try:
-                comment_body = format_pr_comment(verdict, risk_score, findings_to_insert, commit_sha)
+                diff_text = code_content if is_diff else ""
+                comment_body = format_pr_comment(verdict, risk_score, findings_to_insert, commit_sha, diff_text=diff_text)
                 await post_pr_comment(repo_full_name, pr_number, installation_id, comment_body)
             except Exception as e:
                 logger.warning(f"Failed to post PR comment for job {job_id}: {e}")
