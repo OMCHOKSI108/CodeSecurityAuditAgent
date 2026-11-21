@@ -19,7 +19,6 @@ import { Button } from "@/components/ui/Button";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import {
   fetchMe,
-  loginUser,
   fetchRepositories,
   fetchPullRequests,
   GITHUB_APP_INSTALL_URL,
@@ -149,17 +148,6 @@ export default function HomePage() {
     } finally {
       setLoading(false);
       setRefreshing(false);
-    }
-  };
-
-  const handleDemoSignIn = async () => {
-    setLoading(true);
-    const profile = await loginUser({ username: "admin", email: "admin@codesec.ai" });
-    if (profile) {
-      setUser(profile);
-      await loadDashboardData();
-    } else {
-      setLoading(false);
     }
   };
 
@@ -512,17 +500,6 @@ export default function HomePage() {
               </Button>
             </Link>
           )}
-
-
-          <Button
-            variant="ghost"
-            size="lg"
-            onClick={handleDemoSignIn}
-            className="font-mono text-xs"
-            style={{ border: "1px dashed var(--border-light)" }}
-          >
-            Instant Workspace Demo
-          </Button>
         </div>
 
         {/* Live Audit Preview Card */}
