@@ -37,6 +37,7 @@ export default function TeamPage() {
   // Interaction feedback
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [revokingId, setRevokingId] = useState<string | null>(null);
+  const [resendingId, setResendingId] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<{
     text: string;
     type: "success" | "error" | "info";
@@ -151,6 +152,32 @@ export default function TeamPage() {
       setTimeout(() => setCopiedId(null), 2500);
     } catch {
       showToast("Unable to copy link to clipboard.", "error");
+    }
+  };
+
+  const handleResend = async (email: string, role: string, id: string) => {
+    setResendingId(id);
+    try {
+      const refreshed = await inviteTeamMember(email, role);
+      if (refreshed) {
+        setInvitations((prev) => [refreshed, ...prev.filter((i) => i.id !== id)]);
+        if (refreshed.invite_link) {
+          try {
+            if (navigator?.clipboard?.writeText) {
+              await navigator.clipboard.writeText(refreshed.invite_link);
+            }
+          } catch {}
+          showToast(`Fresh invite created for ${email} & link copied to clipboard!`, "success");
+        } else {
+          showToast(`Fresh invite created for ${email}.`, "success");
+        }
+      } else {
+        showToast("Failed to refresh invitation.", "error");
+      }
+    } catch {
+      showToast("Error while refreshing invitation.", "error");
+    } finally {
+      setResendingId(null);
     }
   };
 
@@ -427,6 +454,15 @@ export default function TeamPage() {
                             {isCopied ? "✓ Copied Link" : "Copy Link"}
                           </Button>
                           <Button
+                            variant="secondary"
+                            size="sm"
+                            disabled={resendingId === inv.id}
+                            onClick={() => handleResend(inv.email, inv.role, inv.id)}
+                            title="Generate a fresh invitation token and copy link"
+                          >
+                            {resendingId === inv.id ? "Resending..." : "Resend"}
+                          </Button>
+                          <Button
                             variant="ghost"
                             size="sm"
                             disabled={isRevoking}
@@ -435,6 +471,7 @@ export default function TeamPage() {
                           >
                             {isRevoking ? "Revoking..." : "Revoke"}
                           </Button>
+
                         </div>
                       </td>
                     </tr>
