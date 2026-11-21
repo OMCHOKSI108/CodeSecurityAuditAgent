@@ -36,3 +36,7 @@ secrets/
 test-results/
 playwright-report/
 *.tsbuildinfo
+
+*.mp4
+videos/
+
