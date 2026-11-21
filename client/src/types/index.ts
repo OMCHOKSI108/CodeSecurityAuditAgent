@@ -99,6 +99,15 @@ export interface TeamMember {
   avatar_url?: string;
 }
 
+export interface TeamInvitation {
+  id: string;
+  email: string;
+  role: "Admin" | "Security Lead" | "Developer" | "Viewer";
+  invited_by: string;
+  created_at: string;
+  invite_link: string;
+}
+
 export interface ReportSummary {
   period: string;
   repos_scanned: number;

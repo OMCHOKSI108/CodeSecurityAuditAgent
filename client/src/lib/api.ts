@@ -8,6 +8,7 @@ import {
   ReviewRecord,
   SecurityPolicy,
   TeamMember,
+  TeamInvitation,
   UserProfile,
 } from "@/types";
 
@@ -288,6 +289,49 @@ export async function fetchTeamMembers(): Promise<TeamMember[]> {
     }
   } catch {}
   return [];
+}
+
+export async function fetchTeamInvitations(): Promise<TeamInvitation[]> {
+  try {
+    const res = await fetch("/api/team/invitations", { credentials: "include" });
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        return data;
+      }
+    }
+  } catch {}
+  return [];
+}
+
+export async function inviteTeamMember(
+  email: string,
+  role: string = "Developer"
+): Promise<TeamInvitation | null> {
+  try {
+    const res = await fetch("/api/team/invite", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ email, role }),
+    });
+    if (res.ok) {
+      return await res.json();
+    }
+  } catch {}
+  return null;
+}
+
+export async function revokeInvitation(id: string): Promise<boolean> {
+  try {
+    const res = await fetch(`/api/team/invitations/${id}`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
 }
 
 export async function fetchAnalyticsTrends(): Promise<AnalyticsTrends | null> {
