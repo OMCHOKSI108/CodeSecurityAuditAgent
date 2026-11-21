@@ -1,36 +1,61 @@
-# CodeSecAudit AI
+<div align="center">
 
-Enterprise AI Pull Request Reviewer for Security, Code Quality, and RAG-based Secure Coding Guidance
+# 🛡️ CodeSecAudit AI
 
-CodeSecAudit AI acts like an AI senior engineer inside GitHub pull requests, detecting risky code, posting inline comments, suggesting fixes, and tracking review analytics before code is merged.
+### Autonomous AI Security Engineer for High-Velocity Engineering Teams
+**Block zero-days, CVEs, and OWASP Top 10 vulnerabilities in GitHub Pull Requests before they reach production.**
 
-[![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=flat&logo=python&logoColor=white)](https://www.python.org/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688?style=flat&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
-[![Next.js](https://img.shields.io/badge/Next.js-14-000000?style=flat&logo=nextdotjs&logoColor=white)](https://nextjs.org/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?style=flat&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
-[![Redis](https://img.shields.io/badge/Redis-7-DC382D?style=flat&logo=redis&logoColor=white)](https://redis.io/)
-[![Qdrant](https://img.shields.io/badge/Qdrant-Vector%20DB-DC2626?style=flat&logo=qdrant&logoColor=white)](https://qdrant.tech/)
-[![Docker](https://img.shields.io/badge/Docker-compose-2496ED?style=flat&logo=docker&logoColor=white)](https://docs.docker.com/compose/)
-[![Render](https://img.shields.io/badge/Render-Live-46E3B7?style=flat&logo=render&logoColor=white)](https://codesec-client.onrender.com)
-[![Hugging Face Dataset](https://img.shields.io/badge/HF-Dataset-FFD21E?style=flat&logo=huggingface&logoColor=black)](https://huggingface.co/datasets/OMCHOKSI108/CodeSecAudit-RAG)
-[![Kaggle](https://img.shields.io/badge/Kaggle-Notebook-20BEFF?style=flat&logo=kaggle&logoColor=white)](https://www.kaggle.com/code/omchoksi04/codereview)
-[![GitHub App](https://img.shields.io/badge/GitHub-App-181717?style=flat&logo=github&logoColor=white)](https://github.com/apps/codesecaudit-ai)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Live Platform](https://img.shields.io/badge/Production%20Web%20App-Live%20on%20Render-46E3B7?style=for-the-badge&logo=render&logoColor=white)](https://codesec-client.onrender.com)
+[![GitHub App](https://img.shields.io/badge/GitHub%20App-Certified%20App-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/apps/codesecaudit-ai)
+[![OWASP ASVS](https://img.shields.io/badge/OWASP-ASVS%20v4.0.3-orange?style=for-the-badge&logo=owasp&logoColor=white)](https://owasp.org/www-project-application-security-verification-standard/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)](LICENSE)
+
+<br/>
+
+[![CodeSecAudit AI End-to-End Walkthrough](docs/assets/codesecaudit_demo.gif)](https://codesec-client.onrender.com)
+
+*⚡ **Live Demo Showcase (Sped-Up Walkthrough)**: Autonomous review lifecycle — VS Code vulnerability detection, automated merge block, synchronized commit re-review & approval, and multi-collaborator team intelligence console.*
+
+<br/>
+
+[![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688?style=flat-square&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![Next.js](https://img.shields.io/badge/Next.js-14-000000?style=flat-square&logo=nextdotjs&logoColor=white)](https://nextjs.org/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?style=flat-square&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![Redis](https://img.shields.io/badge/Redis-7-DC382D?style=flat-square&logo=redis&logoColor=white)](https://redis.io/)
+[![Qdrant](https://img.shields.io/badge/Qdrant-Vector%20DB-DC2626?style=flat-square&logo=qdrant&logoColor=white)](https://qdrant.tech/)
+[![Hugging Face Dataset](https://img.shields.io/badge/HF-Dataset-FFD21E?style=flat-square&logo=huggingface&logoColor=black)](https://huggingface.co/datasets/OMCHOKSI108/CodeSecAudit-RAG)
+[![Kaggle](https://img.shields.io/badge/Kaggle-Notebook-20BEFF?style=flat-square&logo=kaggle&logoColor=white)](https://www.kaggle.com/code/omchoksi04/codereview)
+
+</div>
 
 ---
 
-## Live Links
+## 🚀 The Autonomous Security Guardrail Built for Speed
 
-| Asset | Link |
-|---|---|
-| Frontend (Client) | https://codesec-client.onrender.com |
-| Backend (API) | https://codesec-main.onrender.com |
-| RAG Service | https://codesec-rag.onrender.com |
-| GitHub Repo | https://github.com/OMCHOKSI108/CodeSecurityAuditAgent |
-| Live PR Evaluation (CVSS 9.89) | https://github.com/OMCHOKSI108/CodeSecurityAuditAgent/pull/9 |
-| GitHub App | https://github.com/apps/codesecaudit-ai |
-| Kaggle Notebook | https://www.kaggle.com/code/omchoksi04/codereview |
-| Hugging Face Dataset | https://huggingface.co/datasets/OMCHOKSI108/CodeSecAudit-RAG |
+CodeSecAudit AI acts as an **autonomous Staff Security Engineer** embedded directly into your GitHub CI/CD workflows and engineering cockpit. It intercepts every pull request, performs deep AST and RAG-guided vulnerability analysis, enforces OWASP ASVS v4.0.3 compliance, posts actionable inline fixes, and dynamically re-reviews upon every commit until the PR is provably safe.
+
+### 🌟 Key Superpowers
+- **⚡ Autonomous PR Gatekeeper**: Automatically blocks PR merges (`🚫 MERGE BLOCKED`) when high/critical vulnerabilities are detected (SQLi, Command Injection, Secret Leaks, Insecure Deserialization).
+- **🔄 Synchronize-Aware Re-Review**: Listens for `pull_request.synchronize` events — when developers push clean code fixes, the bot instantly re-evaluates the delta and flips the verdict to `✅ APPROVE` (CVSS 0.00 / 10).
+- **🎯 Zero False Positives**: Intelligent suppression engine accurately handles parameterized SQL queries (`db.execute(sql, params)`), safe shell sanitizers (`shlex.quote`), and developer inline directives (`# codesec-ignore: CWE-XXX`).
+- **📊 Real-Time Security Telemetry**: Next.js 14 console with active Pull Request inspection, Finding triage, Security Trends with MTTR curves, OWASP ASVS audit reports, and multi-tenant Team management.
+- **🤝 Multi-User Team Synchronization**: Seamlessly manage team members across GitHub accounts with real-time invitation workflows, avatar syncing, and granular role assignments.
+
+---
+
+## 🔗 Live Production Deployment & Real PR Demonstrations
+
+| Deployment / Showcase | Description | Live Link |
+|---|---|---|
+| **Frontend Web Console** | Next.js 14 Production Dashboard, Telemetry & Compliance | [codesec-client.onrender.com](https://codesec-client.onrender.com) |
+| **Backend API Gateway** | FastAPI REST & GitHub Webhook Processing Engine | [codesec-main.onrender.com](https://codesec-main.onrender.com) |
+| **RAG Security Service** | Semantic Search across 2,800+ OWASP Benchmark Docs | [codesec-rag.onrender.com](https://codesec-rag.onrender.com) |
+| **GitHub App** | One-click installation on any GitHub repository | [github.com/apps/codesecaudit-ai](https://github.com/apps/codesecaudit-ai) |
+| **🔥 PR #16: Live Block ➔ Fix ➔ Approve** | Real-world automated block (`CVSS High`) followed by push remediation to (`✅ APPROVE CVSS 0.0`) and merge | [PR #16 Live Case Study](https://github.com/OMCHOKSI108/CodeSecurityAuditAgent/pull/16) |
+| **👥 PR #17 & #18: Collaborator Ingestion** | Multi-account collaborator PR reviews (`thecenteroftestingpentagon`) passing audit | [PR #17](https://github.com/OMCHOKSI108/CodeSecurityAuditAgent/pull/17) / [PR #18](https://github.com/OMCHOKSI108/CodeSecurityAuditAgent/pull/18) |
+| **Hugging Face Dataset** | Curated RAG benchmark dataset with 2,800+ OWASP pairs | [CodeSecAudit-RAG](https://huggingface.co/datasets/OMCHOKSI108/CodeSecAudit-RAG) |
+| **Kaggle Kernel** | Comprehensive model training and evaluation notebook | [CodeSecAudit Review Kernel](https://www.kaggle.com/code/omchoksi04/codereview) |
 
 ---
 
