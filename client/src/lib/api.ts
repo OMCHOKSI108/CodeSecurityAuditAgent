@@ -334,6 +334,25 @@ export async function revokeInvitation(id: string): Promise<boolean> {
   }
 }
 
+export async function acceptInvitation(
+  token: string
+): Promise<{ ok: boolean; message: string; data?: any }> {
+  try {
+    const res = await fetch(`/api/team/invitations/${encodeURIComponent(token)}/accept`, {
+      method: "POST",
+      credentials: "include",
+    });
+    const data = await res.json().catch(() => null);
+    if (res.ok) {
+      return { ok: true, message: data?.message || "Invitation accepted successfully", data };
+    }
+    return { ok: false, message: data?.detail || "Failed to accept invitation" };
+  } catch (err: any) {
+    return { ok: false, message: err?.message || "Network error while accepting invitation" };
+  }
+}
+
+
 export async function fetchAnalyticsTrends(): Promise<AnalyticsTrends | null> {
   try {
     const res = await fetch("/api/analytics/trends", { credentials: "include" });
