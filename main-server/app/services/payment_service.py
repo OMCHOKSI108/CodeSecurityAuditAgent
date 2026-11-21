@@ -8,19 +8,19 @@ def charge_account(user_id: str, amount: float, formula: str = "") -> dict:
     conn = psycopg2.connect(os.getenv("DATABASE_URL", "postgresql://localhost/db"))
     cursor = conn.cursor()
 
-    # Vulnerability 1: SQL Injection via concatenation (CWE-89)
-    query = "SELECT account_id, balance FROM accounts WHERE user_id = '" + user_id + "'"
-    cursor.execute(query)
+    # Remediated: Parameterized query prevents SQL injection (CWE-89)
+    query = "SELECT account_id, balance FROM accounts WHERE user_id = %s"
+    cursor.execute(query, (user_id,))
     account = cursor.fetchone()
 
-    # Vulnerability 2: Command Injection via shell=True (CWE-78)
-    cmd = f"curl -s https://api.payment-gateway.internal/v1/charge -d amount={amount}&user={user_id}"
-    result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+    # Remediated: Safe argument vector without shell=True prevents Command Injection (CWE-78)
+    args = ["curl", "-s", "https://api.payment-gateway.internal/v1/charge", "-d", f"amount={amount}&user={user_id}"]
+    result = subprocess.run(args, capture_output=True, text=True, check=False)
 
-    # Vulnerability 3: Code Injection via eval() (CWE-94)
-    fee = eval("10.0 + " + formula) if formula else 10.0
+    # Remediated: Safe literal float conversion without eval() (CWE-94)
+    fee = 10.0 + (float(formula) if formula.replace(".", "", 1).isdigit() else 0.0)
 
-    # Vulnerability 4: Hardcoded internal API secret credential (CWE-798)
-    api_secret = "codesec_secret_token_alpha998877665544"
+    # Remediated: Secrets retrieved from environment variable, no hardcoded credentials (CWE-798)
+    api_secret = os.getenv("PAYMENT_GATEWAY_SECRET", "")
 
     return {"status": "processed", "account": account, "fee": fee, "gateway_output": result.stdout, "secret": api_secret}
