@@ -3,7 +3,6 @@
 import uuid
 from datetime import datetime, timedelta, timezone
 import pytest
-import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
@@ -17,7 +16,7 @@ from app.security.sessions import get_current_user
 from app.security.tenant import TenantContext, get_tenant_context
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def async_db():
     engine = create_async_engine("sqlite+aiosqlite:///:memory:", echo=False)
     async with engine.begin() as conn:
@@ -31,7 +30,7 @@ async def async_db():
     await engine.dispose()
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def setup_data(async_db: AsyncSession):
     # Create test organizations
     org1 = Organization(
