@@ -1,7 +1,8 @@
 """Payment processing service for high-volume transactions."""
 
 import os
-import subprocess
+import urllib.request
+import urllib.parse
 import psycopg2
 
 def charge_account(user_id: str, amount: float, formula: str = "") -> dict:
@@ -13,9 +14,10 @@ def charge_account(user_id: str, amount: float, formula: str = "") -> dict:
     cursor.execute(query, (user_id,))
     account = cursor.fetchone()
 
-    # Remediated: Safe argument vector without shell=True prevents Command Injection (CWE-78)
-    args = ["curl", "-s", "https://api.payment-gateway.internal/v1/charge", "-d", f"amount={amount}&user={user_id}"]
-    result = subprocess.run(args, capture_output=True, text=True, check=False)
+    # Remediated: Standard urllib request without subprocess or shell (CWE-78)
+    url = "https://api.payment-gateway.internal/v1/charge"
+    data = urllib.parse.urlencode({"amount": str(amount), "user": user_id}).encode()
+    req = urllib.request.Request(url, data=data, method="POST")
 
     # Remediated: Safe literal float conversion without eval() (CWE-94)
     fee = 10.0 + (float(formula) if formula.replace(".", "", 1).isdigit() else 0.0)
@@ -23,4 +25,4 @@ def charge_account(user_id: str, amount: float, formula: str = "") -> dict:
     # Remediated: Secrets retrieved from environment variable, no hardcoded credentials (CWE-798)
     api_secret = os.getenv("PAYMENT_GATEWAY_SECRET", "")
 
-    return {"status": "processed", "account": account, "fee": fee, "gateway_output": result.stdout, "secret": api_secret}
+    return {"status": "processed", "account": account, "fee": fee, "secret_present": bool(api_secret)}
